@@ -42,7 +42,7 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 	
 	private String queueForCluster = "queue_cluster_";
 	private Boolean queueDurableForCluster = true;
-	private Boolean queueExclusiveForCluster = true;
+	private Boolean queueExclusiveForCluster = false;
 	private Boolean queueAutoDeleteForCluster = true;
 	
 	private String routingKey = "syncMessage";
@@ -64,6 +64,8 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 		networkInterfceManager.createExchange(exchangeForCluster, exchangeTypeForCluster, exchangeDurableForCluster, exchangeAutoDeleteForCluster, null);
 		
 		networkInterfceManager.createQueue(queueForCluster, queueDurableForCluster, queueExclusiveForCluster, queueAutoDeleteForCluster, null);
+		
+		networkInterfceManager.createClients(exchangeForCluster, queueForCluster);
 		
 		serviceInstancesManager.registerService(serviceConsumer);
 		

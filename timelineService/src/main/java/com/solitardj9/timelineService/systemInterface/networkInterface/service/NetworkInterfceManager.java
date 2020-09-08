@@ -18,8 +18,6 @@ public interface NetworkInterfceManager {
 
 	public void unbindQueueFromExchange(String queue, String exchange, String routingKey);
 	
-	
-	
-	
+	public void createClients(String exchangeToPublish, String queueToListen);
 	
 }

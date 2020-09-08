@@ -22,6 +22,8 @@ import com.solitardj9.timelineService.systemInterface.networkInterface.service.i
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientExchangeUnbindFailure;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientQueueDeclareFailure;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientQueueDeleteFailure;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.RabbitMQClient;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.exception.ExceptionRabbitMQClientConnectionFailure;
 
 @Service("networkInterfceManager")
 public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
@@ -30,6 +32,15 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
 	
 	@Value("${systemInterface.networkInterface.networkInterfaceManager.rabbitMQ.admin.connectionCount}")
 	private Integer adminConnectionCount;
+	
+	@Value("${systemInterface.networkInterface.networkInterfaceManager.rabbitMQ.client.connectionCount}")
+	private Integer clientConnectionCount;
+	
+	@Value("${systemInterface.networkInterface.networkInterfaceManager.rabbitMQ.client.recvChannel}")
+	private Integer clientRecvChannel;
+	
+	@Value("${systemInterface.networkInterface.networkInterfaceManager.rabbitMQ.client.sendChannel}")
+	private Integer clientSendChannel;
 	
 	@Value("${systemInterface.networkInterface.networkInterfaceManager.rabbitMQ.connection.host}")
 	private String host;
@@ -47,6 +58,8 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
 	private String pw;
 	
 	private List<RabbitMQAdminClient> rabbitMQAdminClients;
+	
+	private List<RabbitMQClient> rabbitMQClients;
 	
 	private Random random = new Random();
 	
@@ -143,8 +156,20 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
 		}
 	}
 	
-	
-	
+	@Override
+	public void createClients(String exchangeToPublish, String queueToListen) {
+		//
+		rabbitMQClients = new ArrayList<>();
+		for (int i = 0 ; i < clientConnectionCount ; i++) {
+			RabbitMQClient rabbitMQClient = new RabbitMQClient(host, tcpPort, id, pw, clientRecvChannel, clientSendChannel, exchangeToPublish, queueToListen);
+			try {
+				rabbitMQClient.connect();
+			} catch (ExceptionRabbitMQClientConnectionFailure e) {
+				logger.error("[NetworkInterfceManager].createClients : error = " + e.toString());
+			}
+			rabbitMQClients.add(rabbitMQClient);
+		}
+	}
 	
 	
 	
