@@ -1,6 +1,8 @@
 package com.solitardj9.timelineService.service.serviceManager.service.impl;
 
 import java.sql.Timestamp;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 
@@ -10,12 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesCallback;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
+import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
 
 @Service("serviceManager")
-public class ServiceManagerImpl implements ServiceManager {
+public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallback {
 	
 	private static final Logger logger = LoggerFactory.getLogger(ServiceManagerImpl.class);
 	
@@ -41,6 +45,8 @@ public class ServiceManagerImpl implements ServiceManager {
 	private Boolean queueExclusiveForCluster = true;
 	private Boolean queueAutoDeleteForCluster = true;
 	
+	private String routingKey = "syncMessage";
+	
 	@PostConstruct
 	public void init() {
 		//
@@ -50,21 +56,31 @@ public class ServiceManagerImpl implements ServiceManager {
 	
 	@Override
 	public void startService() {
-		// TODO Auto-generated method stub
-		
+		//
 		logger.info("[ServiceManager].startService : [" + new Timestamp(System.currentTimeMillis()) + "]");
+		
+		serviceInstancesManager.setServiceInstancesCallback(this);
 		
 		networkInterfceManager.createExchange(exchangeForCluster, exchangeTypeForCluster, exchangeDurableForCluster, exchangeAutoDeleteForCluster, null);
 		
 		networkInterfceManager.createQueue(queueForCluster, queueDurableForCluster, queueExclusiveForCluster, queueAutoDeleteForCluster, null);
 		
 		serviceInstancesManager.registerService(serviceConsumer);
+		
+		Map<String, ServiceInstance> serviceInstancesMap = serviceInstancesManager.getServiceInstances();
+		for (Entry<String, ServiceInstance> iter : serviceInstancesMap.entrySet()) {
+			//
+			String tmpServicename = iter.getKey();
+			if (!tmpServicename.equals(serviceConsumer)) {
+				String otherExchangeForCluster = "ex_cluster_" + tmpServicename;
+				networkInterfceManager.bindQueueWithExchange(queueForCluster, otherExchangeForCluster, routingKey);
+			}
+		}
 	}
 
 	@Override
 	public void stopService() {
-		// TODO Auto-generated method stub
-		
+		//
 		logger.info("[ServiceManager].stopService : [" + new Timestamp(System.currentTimeMillis()) + "]");
 		
 		networkInterfceManager.deleteExchange(exchangeForCluster);
@@ -72,5 +88,14 @@ public class ServiceManagerImpl implements ServiceManager {
 		networkInterfceManager.deleteQueue(queueForCluster);
 		
 		serviceInstancesManager.unregisterService(serviceConsumer);
+	}
+
+	@Override
+	public void registeredService(String serviceName) {
+		//
+		if (!serviceName.equals(serviceConsumer)) {
+			String otherExchangeForCluster = "ex_cluster_" + serviceName;
+			networkInterfceManager.bindQueueWithExchange(queueForCluster, otherExchangeForCluster, routingKey);
+		}
 	}
 }

@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
+import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
-import com.solitardj9.timelineService.service.serviceManager.service.data.ServiceInstance;
 
 @RestController
 @RequestMapping(value="/timeline-service/management")

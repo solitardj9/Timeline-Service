@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.service.serviceManager.service.data;
+package com.solitardj9.timelineService.service.serviceInstancesManager.service.data;
 
 import java.io.Serializable;
 import java.sql.Timestamp;

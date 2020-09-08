@@ -1,7 +1,9 @@
 server:
+  # change point to scalability
   port: 18771
   
 service:
+  # change point to scalability
   consumer: 'consumer_1'
   consumerGroup: 'consumer_group_1'
   
