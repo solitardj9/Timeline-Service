@@ -4,45 +4,45 @@ public class InMemoryParamEnum {
     //
 	public enum InMemoryStatus {
 	    //
-	    COONECTED(true),
-	    DISCOONECTED(false)
-	    ;
-	    
-	    private Boolean status;
-	    
-	    private InMemoryStatus(Boolean status) {
-	        this.status = status;
+		COONECTED(true),
+		DISCOONECTED(false)
+		;
+		
+		private Boolean status;
+		
+		private InMemoryStatus(Boolean status) {
+			this.status = status;
 	    }
-	    
-	    public Boolean getStatus() {
-	        return status;
+		
+		public Boolean getStatus() {
+			return status;
 	    }
-	    
-	    @Override
-	    public String toString() {
-	        return status.toString();
+		
+		@Override
+		public String toString() {
+			return status.toString();
 	    }
 	}
 	
 	public enum InMemoryMode {
 	    //
-	    AWS("aws"),
-	    LOCAL("local")
-	    ;
-	    
-	    private String mode;
-	    
-	    private InMemoryMode(String mode) {
-	        this.mode = mode;
+		AWS("aws"),
+		LOCAL("local")
+		;
+		
+		private String mode;
+		
+		private InMemoryMode(String mode) {
+			this.mode = mode;
 	    }
-	    
-	    public String getMode() {
-	        return mode;
+		
+		public String getMode() {
+			return mode;
 	    }
-	    
-	    @Override
-	    public String toString() {
-	        return mode;
+		
+		@Override
+		public String toString() {
+			return mode;
 	    }
 	}
 }

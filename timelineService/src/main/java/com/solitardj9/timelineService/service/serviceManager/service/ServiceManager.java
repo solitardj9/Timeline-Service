@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.application.serviceManager.service;
+package com.solitardj9.timelineService.service.serviceManager.service;
 
 public interface ServiceManager {
 	//

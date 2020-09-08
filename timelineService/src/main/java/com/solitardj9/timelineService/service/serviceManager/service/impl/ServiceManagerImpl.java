@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.application.serviceManager.service.impl;
+package com.solitardj9.timelineService.service.serviceManager.service.impl;
 
 import java.sql.Timestamp;
 
@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.solitardj9.timelineService.application.serviceManager.service.ServiceManager;
+import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
+import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
 
 @Service("serviceManager")
@@ -20,6 +21,9 @@ public class ServiceManagerImpl implements ServiceManager {
 	
 	@Autowired
 	NetworkInterfceManager networkInterfceManager;
+	
+	@Autowired
+	ServiceInstancesManager serviceInstancesManager;
 	
 	@Value("${service.consumer}")
 	private String serviceConsumer;
@@ -53,6 +57,8 @@ public class ServiceManagerImpl implements ServiceManager {
 		networkInterfceManager.createExchange(exchangeForCluster, exchangeTypeForCluster, exchangeDurableForCluster, exchangeAutoDeleteForCluster, null);
 		
 		networkInterfceManager.createQueue(queueForCluster, queueDurableForCluster, queueExclusiveForCluster, queueAutoDeleteForCluster, null);
+		
+		serviceInstancesManager.registerService(serviceConsumer);
 	}
 
 	@Override
@@ -64,5 +70,7 @@ public class ServiceManagerImpl implements ServiceManager {
 		networkInterfceManager.deleteExchange(exchangeForCluster);
 		
 		networkInterfceManager.deleteQueue(queueForCluster);
+		
+		serviceInstancesManager.unregisterService(serviceConsumer);
 	}
 }
