@@ -2,6 +2,8 @@ package com.solitardj9.timelineService.systemInterface.networkInterface.service;
 
 import java.util.Map;
 
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.QueueToListen;
+
 public interface NetworkInterfceManager {
 	//
 	public void disconnectAdminClients();
@@ -18,6 +20,6 @@ public interface NetworkInterfceManager {
 
 	public void unbindQueueFromExchange(String queue, String exchange, String routingKey);
 	
-	public void createClients(String exchangeToPublish, String queueToListen);
+	public void createClients(String exchangeToPublish, QueueToListen queueToListen);
 	
 }

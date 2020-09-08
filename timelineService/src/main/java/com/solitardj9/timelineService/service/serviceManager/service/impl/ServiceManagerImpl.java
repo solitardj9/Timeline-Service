@@ -17,6 +17,7 @@ import com.solitardj9.timelineService.service.serviceInstancesManager.service.Se
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.QueueToListen;
 
 @Service("serviceManager")
 public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallback {
@@ -45,6 +46,8 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 	private Boolean queueExclusiveForCluster = false;
 	private Boolean queueAutoDeleteForCluster = true;
 	
+	private QueueToListen queueToListen;
+	
 	private String routingKey = "syncMessage";
 	
 	@PostConstruct
@@ -52,6 +55,8 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 		//
 		exchangeForCluster = "ex_cluster_" + serviceConsumer;
 		queueForCluster = "queue_cluster_" + serviceConsumer;
+		
+		queueToListen = new QueueToListen(queueForCluster, queueDurableForCluster, queueExclusiveForCluster, queueAutoDeleteForCluster, null);
 	}
 	
 	@Override
@@ -63,9 +68,9 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 		
 		networkInterfceManager.createExchange(exchangeForCluster, exchangeTypeForCluster, exchangeDurableForCluster, exchangeAutoDeleteForCluster, null);
 		
-		networkInterfceManager.createQueue(queueForCluster, queueDurableForCluster, queueExclusiveForCluster, queueAutoDeleteForCluster, null);
+		networkInterfceManager.createQueue(queueToListen.getQueue(), queueToListen.isDurable(), queueToListen.isExclusive(), queueToListen.isAutoDelete(), queueToListen.getArguments());
 		
-		networkInterfceManager.createClients(exchangeForCluster, queueForCluster);
+		networkInterfceManager.createClients(exchangeForCluster, queueToListen);
 		
 		serviceInstancesManager.registerService(serviceConsumer);
 		

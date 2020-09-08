@@ -95,6 +95,9 @@ public class RabbitMQAdminClient {
 		connectionFactory.setAutomaticRecoveryEnabled(true);
 		connectionFactory.setConnectionTimeout(connectionTimeout);
 		
+		Integer requestedHeartbeat = 1;
+		connectionFactory.setRequestedHeartbeat(requestedHeartbeat);
+		
 		try {
 			connection = connectionFactory.newConnection();
 			channel = connection.createChannel();
@@ -119,60 +122,60 @@ public class RabbitMQAdminClient {
 		}
 	}
 	
-	public void createExchange(String exchange, String type, boolean durable, boolean autoDelete, Map<String, Object> arguments) throws ExceptionRabbitMQAdminClientExchangeDeclareFailure {
+	public com.rabbitmq.client.AMQP.Exchange.DeclareOk createExchange(String exchange, String type, boolean durable, boolean autoDelete, Map<String, Object> arguments) throws ExceptionRabbitMQAdminClientExchangeDeclareFailure {
 		//
 		try {
-			channel.exchangeDeclare(exchange, type, durable, autoDelete, arguments);
+			return channel.exchangeDeclare(exchange, type, durable, autoDelete, arguments);
 		} catch (IOException e) {
 			logger.error("[RabbitMQAdminClient].createExchange : error = " + e.toString());
 			throw new ExceptionRabbitMQAdminClientExchangeDeclareFailure();
 		}
 	}
 	
-	public void deleteExchange(String exchange) throws ExceptionRabbitMQAdminClientExchangeDeleteFailure {
+	public com.rabbitmq.client.AMQP.Exchange.DeleteOk deleteExchange(String exchange) throws ExceptionRabbitMQAdminClientExchangeDeleteFailure {
 		//
 		try {
-			channel.exchangeDelete(exchange);
+			return channel.exchangeDelete(exchange);
 		} catch (IOException | AlreadyClosedException e) {
 			logger.error("[RabbitMQAdminClient].deleteExchange : error = " + e.toString());
 			throw new ExceptionRabbitMQAdminClientExchangeDeleteFailure();
 		}
 	}
 	
-	public void createQueue(String queue, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) throws ExceptionRabbitMQAdminClientQueueDeclareFailure {
+	public com.rabbitmq.client.AMQP.Queue.DeclareOk createQueue(String queue, boolean durable, boolean exclusive, boolean autoDelete, Map<String, Object> arguments) throws ExceptionRabbitMQAdminClientQueueDeclareFailure {
 		//
 		try {
-			channel.queueDeclare(queue, durable, exclusive, autoDelete, arguments);
+			return channel.queueDeclare(queue, durable, exclusive, autoDelete, arguments);
 		} catch (IOException | AlreadyClosedException e) {
 			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
 			throw new ExceptionRabbitMQAdminClientQueueDeclareFailure();
 		}
 	}
 
-	public void deleteQueue(String queue) throws ExceptionRabbitMQAdminClientQueueDeleteFailure {
+	public com.rabbitmq.client.AMQP.Queue.DeleteOk deleteQueue(String queue) throws ExceptionRabbitMQAdminClientQueueDeleteFailure {
 		//
 		try {
-			channel.queueDelete(queue);
+			return channel.queueDelete(queue);
 		} catch (IOException | AlreadyClosedException e) {
 			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
 			throw new ExceptionRabbitMQAdminClientQueueDeleteFailure();
 		}
 	}
 	
-	public void bindQueueWithExchange(String queue, String exchange, String routingKey) throws ExceptionRabbitMQAdminClientExchangeBindFailure {
+	public com.rabbitmq.client.AMQP.Queue.BindOk bindQueueWithExchange(String queue, String exchange, String routingKey) throws ExceptionRabbitMQAdminClientExchangeBindFailure {
 		//
 		try {
-			channel.queueBind(queue, exchange, routingKey);
+			return channel.queueBind(queue, exchange, routingKey);
 		} catch (IOException | AlreadyClosedException e) {
 			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
 			throw new ExceptionRabbitMQAdminClientExchangeBindFailure();
 		}
 	}
 
-	public void unbindQueueFromExchange(String queue, String exchange, String routingKey) throws ExceptionRabbitMQAdminClientExchangeUnbindFailure {
+	public com.rabbitmq.client.AMQP.Queue.UnbindOk unbindQueueFromExchange(String queue, String exchange, String routingKey) throws ExceptionRabbitMQAdminClientExchangeUnbindFailure {
 		//
 		try {
-			channel.queueUnbind(queue, exchange, routingKey);
+			return channel.queueUnbind(queue, exchange, routingKey);
 		} catch (IOException | AlreadyClosedException e) {
 			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
 			throw new ExceptionRabbitMQAdminClientExchangeUnbindFailure();

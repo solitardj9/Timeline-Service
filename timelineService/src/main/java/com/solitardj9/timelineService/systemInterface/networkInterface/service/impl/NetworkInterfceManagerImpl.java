@@ -1,6 +1,7 @@
 package com.solitardj9.timelineService.systemInterface.networkInterface.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -9,9 +10,17 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvAck;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvMsg;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvAckParam;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvMsgParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.RabbitMQAdminClient;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientConnectionFailure;
@@ -22,13 +31,18 @@ import com.solitardj9.timelineService.systemInterface.networkInterface.service.i
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientExchangeUnbindFailure;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientQueueDeclareFailure;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientQueueDeleteFailure;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.QueueToListen;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.RabbitMQClient;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.RabbitMQClientCallback;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.exception.ExceptionRabbitMQClientConnectionFailure;
 
 @Service("networkInterfceManager")
-public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
+public class NetworkInterfceManagerImpl implements NetworkInterfceManager, RabbitMQClientCallback {
 	//
 	private static final Logger logger = LoggerFactory.getLogger(NetworkInterfceManagerImpl.class);
+	
+	@Autowired
+    ApplicationEventPublisher applicationEventPublisher;
 	
 	@Value("${systemInterface.networkInterface.networkInterfaceManager.rabbitMQ.admin.connectionCount}")
 	private Integer adminConnectionCount;
@@ -59,7 +73,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
 	
 	private List<RabbitMQAdminClient> rabbitMQAdminClients;
 	
-	private List<RabbitMQClient> rabbitMQClients;
+	private Map<String, RabbitMQClient> rabbitMQClients;
 	
 	private Random random = new Random();
 	
@@ -157,21 +171,47 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager {
 	}
 	
 	@Override
-	public void createClients(String exchangeToPublish, String queueToListen) {
+	public void createClients(String exchangeToPublish, QueueToListen queueToListen) {
 		//
-		rabbitMQClients = new ArrayList<>();
+		rabbitMQClients = new HashMap<>();
 		for (int i = 0 ; i < clientConnectionCount ; i++) {
-			RabbitMQClient rabbitMQClient = new RabbitMQClient(host, tcpPort, id, pw, clientRecvChannel, clientSendChannel, exchangeToPublish, queueToListen);
+			RabbitMQClient rabbitMQClient = new RabbitMQClient(host, tcpPort, id, pw, clientRecvChannel, clientSendChannel, exchangeToPublish, queueToListen, this);
 			try {
 				rabbitMQClient.connect();
 			} catch (ExceptionRabbitMQClientConnectionFailure e) {
 				logger.error("[NetworkInterfceManager].createClients : error = " + e.toString());
 			}
-			rabbitMQClients.add(rabbitMQClient);
+			rabbitMQClients.put(rabbitMQClient.getClientId(), rabbitMQClient);
+		}
+	}
+
+	@Override
+	public void onMessage(String clientId, String consumerTag, String message) {
+		// TODO Auto-generated method stub
+		if (applicationEventPublisher == null) {
+			logger.info("[NetworkInterfceManager].onMessage : cosunmerTag = " + consumerTag + " / message = " + message);
+		}
+		else {
+			Map<String, Object> data = new HashMap<>();
+			data.put(GenericRecvMsgParam.CLIENT_ID.getParam(), clientId);
+			data.put(GenericRecvMsgParam.CONSUMER_TAG.getParam(), consumerTag);
+			data.put(GenericRecvMsgParam.MESSAGE.getParam(), message);
+			
+			applicationEventPublisher.publishEvent(new GenericRecvMsg(data));
 		}
 	}
 	
-	
+	@EventListener
+	@Async
+	public void onGenericRecvAckEvent(GenericRecvAck genericRecvAck) {
+		//
+		logger.info("[NetworkInterfceManager].onGenericRecvAckEvent : " + genericRecvAck.toString());
+
+		String clientId = (String)genericRecvAck.getDataValue(GenericRecvAckParam.CLIENT_ID.getParam());
+		String consumerTag = (String)genericRecvAck.getDataValue(GenericRecvAckParam.CONSUMER_TAG.getParam());
+		
+		rabbitMQClients.get(clientId).onMessageAck(consumerTag);
+	}
 	
 	
 	

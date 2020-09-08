@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
@@ -13,11 +15,15 @@ import org.slf4j.LoggerFactory;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Recoverable;
+import com.rabbitmq.client.RecoveryListener;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.exception.ExceptionRabbitMQClientConnectionFailure;
 
-public class RabbitMQClient {
+public class RabbitMQClient implements RecoveryListener {
 	//
 	private static final Logger logger = LoggerFactory.getLogger(RabbitMQClient.class);
+	
+	private String clientId;
 	
 	private String host;
 	
@@ -37,7 +43,9 @@ public class RabbitMQClient {
 	private List<Channel> sendChannels;
 	
 	private String exchangeToPublish;
-	private String queueToListen;
+	private QueueToListen queueToListen;
+	
+	private RabbitMQClientCallback rabbitMQClientCallback;
 	
 	private Integer connectionTimeout = 3000;		// ms
 	
@@ -47,16 +55,26 @@ public class RabbitMQClient {
 		
 	}
 	
-	public RabbitMQClient(String host, Integer port, String id, String pw, Integer recvChannelCount, Integer sendChannelCount, String exchangeToPublish, String queueToListen) {
+	public RabbitMQClient(String host, Integer port, String id, String pw, Integer recvChannelCount, Integer sendChannelCount, String exchangeToPublish, QueueToListen queueToListen, RabbitMQClientCallback rabbitMQClientCallback) {
 		//
+		clientId = UUID.randomUUID().toString().toString();
+		
 		this.host = host;
 		this.port = port;
 		this.id = id;
 		this.pw = pw;
+		
 		this.recvChannelCount = recvChannelCount;
 		this.sendChannelCount = sendChannelCount;
+		
 		this.exchangeToPublish = exchangeToPublish;
 		this.queueToListen = queueToListen;
+		
+		this.rabbitMQClientCallback = rabbitMQClientCallback;
+	}
+	
+	public String getClientId() {
+		return clientId;
 	}
 	
 	public String getHost() {
@@ -133,29 +151,74 @@ public class RabbitMQClient {
 		connectionFactory.setUsername(id);
 		connectionFactory.setPassword(pw);
 		
+		// enable automatic recovery
 		connectionFactory.setAutomaticRecoveryEnabled(true);
 		connectionFactory.setConnectionTimeout(connectionTimeout);
+		
+		// disable topology recovery
+		connectionFactory.setTopologyRecoveryEnabled(false);
 		
 		try {
 			connection = connectionFactory.newConnection();
 			
+			((com.rabbitmq.client.Recoverable)connection).addRecoveryListener(this);
+			
+			makeTopology();
+			
+
+		} catch (IOException | TimeoutException e) {
+			e.printStackTrace();
+			logger.error("[RabbitMQClient].connect : clientId = " + clientId + " / error = " + e.toString());
+			throw new ExceptionRabbitMQClientConnectionFailure();
+		}
+	}
+	
+	private void makeTopology() throws ExceptionRabbitMQClientConnectionFailure {
+		//
+		logger.info("[RabbitMQClient].makeTopology : clientId = " + clientId);
+		
+		try {
 			for (int i = 0 ; i < recvChannelCount ; i++) {
 				RabbitMQComsumer rabbitMQComsumer = new RabbitMQComsumer();
 				String consumerTag = rabbitMQComsumer.createRabbitMQComsumer(this, queueToListen, connection.createChannel());
 				recvRabbitMQComsumers.put(consumerTag, rabbitMQComsumer);
-				
-				System.out.println("[RabbitMQClient].connect : consumerTag = " + consumerTag);
 			}
 			
-//			for (int i = 0 ; i < sendChannelCount ; i++) {
+//				for (int i = 0 ; i < sendChannelCount ; i++) {
 //				Channel tmpChannel = connection.createChannel();
 //				sendChannels.add(tmpChannel);
 //			}
-		} catch (IOException | TimeoutException e) {
-			e.printStackTrace();
-			logger.error("[RabbitMQClient].connect : error = " + e.toString());
+		} catch (IOException e) {
+			//e.printStackTrace();
+			logger.info("[RabbitMQClient].makeTopology : clientId = " + clientId + " / error = " + e.toString());
 			throw new ExceptionRabbitMQClientConnectionFailure();
 		}
+	}
+	
+	private void recoveryTopology() throws ExceptionRabbitMQClientConnectionFailure {
+		//
+		logger.info("[RabbitMQClient].recoveryTopology is called : clientId = " + clientId);
+		
+		try {
+			for (Entry<String, RabbitMQComsumer> iter : recvRabbitMQComsumers.entrySet()) {
+				if (!iter.getValue().getChannel().isOpen()) {
+					iter.getValue().getChannel().abort();
+					//iter.getValue().getChannel().close();
+				}
+			}
+			recvRabbitMQComsumers.clear();
+			
+//			for (int i = 0 ; i < sendChannelCount ; i++) {
+//			Channel tmpChannel = connection.createChannel();
+//			sendChannels.add(tmpChannel);
+//		}
+		} catch (IOException  e) {
+			//e.printStackTrace();
+			logger.info("[RabbitMQClient].recoveryTopology : clientId = " + clientId + " / error = " + e.toString());
+			throw new ExceptionRabbitMQClientConnectionFailure();
+		}
+		
+		makeTopology();
 	}
 	
 //	public void disconnect() throws ExceptionRabbitMQAdminClientDisconnectionFailure {
@@ -181,8 +244,39 @@ public class RabbitMQClient {
 	}
 
 	public void onMessage(String consumerTag, String message) {
+		// 
+		if (rabbitMQClientCallback == null) {
+			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / cosunmerTag = " + consumerTag + " / message = " + message);
+		}
+		else {
+			rabbitMQClientCallback.onMessage(clientId, consumerTag, message);
+		}
+	}
+	
+	public void onMessageAck(String consumerTag) {
 		//
-		logger.info("[RabbitMQClient].onMessage : cosunmerTag = " + consumerTag + " / message = " + message);
+		recvRabbitMQComsumers.get(consumerTag).ack();
+	}
+
+	@Override
+	public void handleRecovery(Recoverable recoverable) {
+		//
+		logger.info("[RabbitMQClient].handleRecovery : clientId = " + clientId + " / recoverable = " + recoverable.toString());
+		
+		try {
+			Thread.sleep(1000);
+			
+			recoveryTopology();
+		} catch (ExceptionRabbitMQClientConnectionFailure | InterruptedException e) {
+			//e.printStackTrace();
+			logger.error("[RabbitMQClient].handleRecovery : error = " + e.toString());
+		}
+	}
+
+	@Override
+	public void handleRecoveryStarted(Recoverable recoverable) {
+		// TODO Auto-generated method stub
+		logger.info("[RabbitMQClient].handleRecoveryStarted : clientId = " + clientId + " / recoverable = " + recoverable.toString());
 	}
 	
 }
