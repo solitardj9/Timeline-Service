@@ -1,0 +1,49 @@
+server:
+  port: 18771
+  
+service:
+  consumer: 'consumer_1'
+  consumerGroup: 'consumer_group_1'
+  
+systemInterface:
+  inMemoryInterface:
+    inMemoryManager:
+      operation:
+        #mode: 'aws'
+        mode: 'local'
+        groupName: 'group_1'
+      network:
+        aws:
+          access-key: ''
+          secret-key: ''
+          #region: 'us-east-1'
+          region: ''
+          #hz-port: '5701-5708'
+          hz-port: ''
+          usePublicIp: false
+        local:
+          port:
+            autoIncrement: true
+            num: 5701
+            count: 100
+          tcpip:
+            #members: '{"member1":"127.0.0.1", "member2":"127.0.0.1"}'
+            members: '{}'
+          multicast:
+            group: '224.2.2.3'
+            port: 54328
+  networkInterface:
+    networkInterfaceManager:
+      rabbitMQ:
+        connection:
+          host: 127.0.0.1
+          tcpPort: 5672
+          managementPort: 15672
+          id: admin
+          pw: apKIc043jaPJ5owsmxiN3A
+        admin:
+          connectionCount: 1
+        client:
+          connectionCount: 2
+          recvChannel: 2
+          sendChannel: 1

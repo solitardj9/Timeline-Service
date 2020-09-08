@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import com.solitardj9.timelineService.application.mapManager.service.TimelineManager;
+import com.solitardj9.timelineService.application.timelineManager.service.TimelineManager;
 
 @SpringBootApplication
 public class TimelineServiceApplication {

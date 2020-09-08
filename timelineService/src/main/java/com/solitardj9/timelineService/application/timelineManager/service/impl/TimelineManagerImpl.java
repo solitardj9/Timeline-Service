@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.application.mapManager.service.impl;
+package com.solitardj9.timelineService.application.timelineManager.service.impl;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 
-import com.solitardj9.timelineService.application.mapManager.service.TimelineManager;
+import com.solitardj9.timelineService.application.timelineManager.service.TimelineManager;
 
 @Service("timelineManager")
 public class TimelineManagerImpl implements TimelineManager {

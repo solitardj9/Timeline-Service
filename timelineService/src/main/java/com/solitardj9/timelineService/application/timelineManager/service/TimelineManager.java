@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.application.mapManager.service;
+package com.solitardj9.timelineService.application.timelineManager.service;
 
 import java.util.TreeMap;
 
