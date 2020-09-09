@@ -4,7 +4,8 @@
 Store a message in timeline
 1) Input is Json document with Timestamp.
 2) Managing timelines with spcific key(Map<Key, Timeline>).
-3) Maintain 
+3) Maintain timelines for a certain period of time. (Periodically delete past values in the timelines)
+4) Read values for a certain period from the timeline.
 
 ## 2. System Architecture
 <div>
@@ -16,3 +17,4 @@ Store a message in timeline
 > > timelien is a TreeMap
 > 2) Stored data is replicated.
 > > replication with event bus (RabbitMQ)
+
