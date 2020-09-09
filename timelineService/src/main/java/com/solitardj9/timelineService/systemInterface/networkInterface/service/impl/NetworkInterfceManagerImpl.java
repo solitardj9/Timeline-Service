@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
@@ -19,8 +21,10 @@ import org.springframework.stereotype.Service;
 
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvAck;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvMsg;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericSendMsg;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvAckParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvMsgParam;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericSendMsgParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.RabbitMQAdminClient;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientConnectionFailure;
@@ -31,9 +35,10 @@ import com.solitardj9.timelineService.systemInterface.networkInterface.service.i
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientExchangeUnbindFailure;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientQueueDeclareFailure;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientQueueDeleteFailure;
-import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.QueueToListen;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.RabbitMQClient;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.RabbitMQClientCallback;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.QueueToListen;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.ToPublish;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.exception.ExceptionRabbitMQClientConnectionFailure;
 
 @Service("networkInterfceManager")
@@ -171,23 +176,37 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 	}
 	
 	@Override
-	public void createClients(String exchangeToPublish, QueueToListen queueToListen) {
+	public void createClients(ToPublish toPublish, QueueToListen queueToListen) {
 		//
 		rabbitMQClients = new HashMap<>();
 		for (int i = 0 ; i < clientConnectionCount ; i++) {
-			RabbitMQClient rabbitMQClient = new RabbitMQClient(host, tcpPort, id, pw, clientRecvChannel, clientSendChannel, exchangeToPublish, queueToListen, this);
+			RabbitMQClient rabbitMQClient = new RabbitMQClient(host, tcpPort, id, pw, clientRecvChannel, clientSendChannel, toPublish, queueToListen, this);
 			try {
 				rabbitMQClient.connect();
 			} catch (ExceptionRabbitMQClientConnectionFailure e) {
+				//e.printStackTrace();
 				logger.error("[NetworkInterfceManager].createClients : error = " + e.toString());
 			}
 			rabbitMQClients.put(rabbitMQClient.getClientId(), rabbitMQClient);
 		}
 	}
+	
+	@Override
+	public void deleteClients() {
+		//
+		for (Entry<String, RabbitMQClient> iter : rabbitMQClients.entrySet()) {
+			try {
+				iter.getValue().disconnect();
+			} catch (ExceptionRabbitMQAdminClientDisconnectionFailure e) {
+				//e.printStackTrace();
+				logger.error("[NetworkInterfceManager].deleteClients : error = " + e.toString());
+			}
+		}
+	}
 
 	@Override
 	public void onMessage(String clientId, String consumerTag, String message) {
-		// TODO Auto-generated method stub
+		//
 		if (applicationEventPublisher == null) {
 			logger.info("[NetworkInterfceManager].onMessage : cosunmerTag = " + consumerTag + " / message = " + message);
 		}
@@ -213,9 +232,25 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		rabbitMQClients.get(clientId).onMessageAck(consumerTag);
 	}
 	
-	
-	
-	
-	
-	
+	@EventListener
+	@Async
+	public void onGenericSendMsgEvent(GenericSendMsg genericSendMsg) {
+		//
+		String routingKey = (String)genericSendMsg.getDataValue(GenericSendMsgParam.ROUTING_KEY.getParam());
+		String message = (String)genericSendMsg.getDataValue(GenericSendMsgParam.MESSAGE.getParam());
+		
+		if (message != null && !message.isEmpty()) {
+			//
+			Set<String> keySet = rabbitMQClients.keySet();
+			Integer index = getRandomIndex(rabbitMQClients.size());
+			String clientId = (String) keySet.toArray()[index];
+			
+			if (routingKey == null || routingKey.isEmpty()) {
+				rabbitMQClients.get(clientId).publishMessage(message);
+			}
+			else {
+				rabbitMQClients.get(clientId).publishMessage(routingKey, message);
+			}
+		}
+	}
 }

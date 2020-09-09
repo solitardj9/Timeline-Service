@@ -6,7 +6,7 @@ public class NetworkInterfaceParamEunm {
 	    //
 		CLIENT_ID("clientId"),
 		CONSUMER_TAG("consumerTag"),
-		MESSAGE("message"),
+		MESSAGE("message")
 		;
 		
 		private String param;
@@ -34,6 +34,28 @@ public class NetworkInterfaceParamEunm {
 		private String param;
 		
 		private GenericRecvAckParam(String param) {
+			this.param = param;
+	    }
+		
+		public String getParam() {
+			return param;
+	    }
+		
+		@Override
+		public String toString() {
+			return param;
+	    }
+	}
+	
+	public enum GenericSendMsgParam {
+	    //
+		ROUTING_KEY("routingKey"),
+		MESSAGE("message")
+		;
+		
+		private String param;
+		
+		private GenericSendMsgParam(String param) {
 			this.param = param;
 	    }
 		

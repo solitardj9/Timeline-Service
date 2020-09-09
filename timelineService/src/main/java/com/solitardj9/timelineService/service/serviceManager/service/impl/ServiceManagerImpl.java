@@ -17,7 +17,9 @@ import com.solitardj9.timelineService.service.serviceInstancesManager.service.Se
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
-import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.QueueToListen;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.ExchangeToPublish;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.QueueToListen;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.ToPublish;
 
 @Service("serviceManager")
 public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallback {
@@ -46,6 +48,7 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 	private Boolean queueExclusiveForCluster = false;
 	private Boolean queueAutoDeleteForCluster = true;
 	
+	private ToPublish exchangeToPublish;
 	private QueueToListen queueToListen;
 	
 	private String routingKey = "syncMessage";
@@ -56,6 +59,7 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 		exchangeForCluster = "ex_cluster_" + serviceConsumer;
 		queueForCluster = "queue_cluster_" + serviceConsumer;
 		
+		exchangeToPublish = new ExchangeToPublish(exchangeForCluster, exchangeTypeForCluster, routingKey, exchangeDurableForCluster, exchangeAutoDeleteForCluster, null);
 		queueToListen = new QueueToListen(queueForCluster, queueDurableForCluster, queueExclusiveForCluster, queueAutoDeleteForCluster, null);
 	}
 	
@@ -66,11 +70,11 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 		
 		serviceInstancesManager.setServiceInstancesCallback(this);
 		
-		networkInterfceManager.createExchange(exchangeForCluster, exchangeTypeForCluster, exchangeDurableForCluster, exchangeAutoDeleteForCluster, null);
+		networkInterfceManager.createExchange(((ExchangeToPublish)exchangeToPublish).getExchange(), ((ExchangeToPublish)exchangeToPublish).getType(), exchangeToPublish.isDurable(), exchangeToPublish.isAutoDelete(), exchangeToPublish.getArguments());
 		
 		networkInterfceManager.createQueue(queueToListen.getQueue(), queueToListen.isDurable(), queueToListen.isExclusive(), queueToListen.isAutoDelete(), queueToListen.getArguments());
 		
-		networkInterfceManager.createClients(exchangeForCluster, queueToListen);
+		networkInterfceManager.createClients(exchangeToPublish, queueToListen);
 		
 		serviceInstancesManager.registerService(serviceConsumer);
 		
@@ -93,6 +97,8 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 		networkInterfceManager.deleteExchange(exchangeForCluster);
 		
 		networkInterfceManager.deleteQueue(queueForCluster);
+		
+		networkInterfceManager.disconnectAdminClients();
 		
 		serviceInstancesManager.unregisterService(serviceConsumer);
 	}

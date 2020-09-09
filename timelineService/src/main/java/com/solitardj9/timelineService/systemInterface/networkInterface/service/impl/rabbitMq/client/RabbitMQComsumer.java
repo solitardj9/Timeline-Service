@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.QueueToListen;
 import com.rabbitmq.client.CancelCallback;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConsumerShutdownSignalCallback;
@@ -54,7 +55,7 @@ public class RabbitMQComsumer implements DeliverCallback, CancelCallback, Consum
 			return this.consumerTag;
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
-			logger.error("[RabbitMQComsumer].RabbitMQComsumer : error = " + e.toString());
+			logger.error("[RabbitMQComsumer].createRabbitMQComsumer : error = " + e.toString());
 			return null;
 		}
     }

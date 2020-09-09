@@ -2,21 +2,23 @@ package com.solitardj9.timelineService.systemInterface.networkInterface.service.
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Recoverable;
 import com.rabbitmq.client.RecoveryListener;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.exception.ExceptionRabbitMQAdminClientDisconnectionFailure;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.QueueToListen;
+import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data.ToPublish;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.exception.ExceptionRabbitMQClientConnectionFailure;
 
 public class RabbitMQClient implements RecoveryListener {
@@ -40,9 +42,9 @@ public class RabbitMQClient implements RecoveryListener {
 	private Connection connection;
 	
 	private Map<String/*Consumer Tag*/, RabbitMQComsumer> recvRabbitMQComsumers = new HashMap<>();
-	private List<Channel> sendChannels;
+	private Map<String/*Publisher Tag*/, RabbitMQPublisher> sendRabbitMQPublishers = new HashMap<>();
 	
-	private String exchangeToPublish;
+	private ToPublish toPublish;
 	private QueueToListen queueToListen;
 	
 	private RabbitMQClientCallback rabbitMQClientCallback;
@@ -55,7 +57,7 @@ public class RabbitMQClient implements RecoveryListener {
 		
 	}
 	
-	public RabbitMQClient(String host, Integer port, String id, String pw, Integer recvChannelCount, Integer sendChannelCount, String exchangeToPublish, QueueToListen queueToListen, RabbitMQClientCallback rabbitMQClientCallback) {
+	public RabbitMQClient(String host, Integer port, String id, String pw, Integer recvChannelCount, Integer sendChannelCount, ToPublish toPublish, QueueToListen queueToListen, RabbitMQClientCallback rabbitMQClientCallback) {
 		//
 		clientId = UUID.randomUUID().toString().toString();
 		
@@ -67,7 +69,7 @@ public class RabbitMQClient implements RecoveryListener {
 		this.recvChannelCount = recvChannelCount;
 		this.sendChannelCount = sendChannelCount;
 		
-		this.exchangeToPublish = exchangeToPublish;
+		this.toPublish = toPublish;
 		this.queueToListen = queueToListen;
 		
 		this.rabbitMQClientCallback = rabbitMQClientCallback;
@@ -125,12 +127,12 @@ public class RabbitMQClient implements RecoveryListener {
 		this.sendChannelCount = sendChannelCount;
 	}
 	
-	public String getExchangeToPublish() {
-		return exchangeToPublish;
+	public ToPublish getToPublish() {
+		return toPublish;
 	}
 
-	public void setExchangeToPublish(String exchangeToPublish) {
-		this.exchangeToPublish = exchangeToPublish;
+	public void setToPublish(ToPublish toPublish) {
+		this.toPublish = toPublish;
 	}
 
 	public Integer getConnectionTimeout() {
@@ -184,10 +186,11 @@ public class RabbitMQClient implements RecoveryListener {
 				recvRabbitMQComsumers.put(consumerTag, rabbitMQComsumer);
 			}
 			
-//				for (int i = 0 ; i < sendChannelCount ; i++) {
-//				Channel tmpChannel = connection.createChannel();
-//				sendChannels.add(tmpChannel);
-//			}
+			for (int i = 0 ; i < sendChannelCount ; i++) {
+				RabbitMQPublisher rabbitMQPublisher = new RabbitMQPublisher();
+				String publisherTag = rabbitMQPublisher.createRabbitMQPublisher(this, toPublish, connection.createChannel());
+				sendRabbitMQPublishers.put(publisherTag, rabbitMQPublisher);
+			}
 		} catch (IOException e) {
 			//e.printStackTrace();
 			logger.info("[RabbitMQClient].makeTopology : clientId = " + clientId + " / error = " + e.toString());
@@ -201,17 +204,18 @@ public class RabbitMQClient implements RecoveryListener {
 		
 		try {
 			for (Entry<String, RabbitMQComsumer> iter : recvRabbitMQComsumers.entrySet()) {
-				if (!iter.getValue().getChannel().isOpen()) {
+				if (iter.getValue().getChannel().isOpen()) {
 					iter.getValue().getChannel().abort();
-					//iter.getValue().getChannel().close();
 				}
 			}
 			recvRabbitMQComsumers.clear();
 			
-//			for (int i = 0 ; i < sendChannelCount ; i++) {
-//			Channel tmpChannel = connection.createChannel();
-//			sendChannels.add(tmpChannel);
-//		}
+			for (Entry<String, RabbitMQPublisher> iter : sendRabbitMQPublishers.entrySet()) {
+				if (iter.getValue().getChannel().isOpen()) {
+					iter.getValue().getChannel().abort();
+				}
+			}
+			sendRabbitMQPublishers.clear();
 		} catch (IOException  e) {
 			//e.printStackTrace();
 			logger.info("[RabbitMQClient].recoveryTopology : clientId = " + clientId + " / error = " + e.toString());
@@ -221,22 +225,31 @@ public class RabbitMQClient implements RecoveryListener {
 		makeTopology();
 	}
 	
-//	public void disconnect() throws ExceptionRabbitMQAdminClientDisconnectionFailure {
-//		//
-//		try {
-//			if (channel != null) {
-//				channel.close();
-//			}
-//			if (connection != null) {
-//				connection.close();
-//			}
-//		} catch (IOException | TimeoutException e) {
-//			logger.error("[RabbitMQAdminClient].disconnect : error = " + e.toString());
-//			throw new ExceptionRabbitMQAdminClientDisconnectionFailure();
-//		}
-//	}
-	
-	
+	public void disconnect() throws ExceptionRabbitMQAdminClientDisconnectionFailure {
+		//
+		try {
+			for (Entry<String, RabbitMQComsumer> iter : recvRabbitMQComsumers.entrySet()) {
+				if (!iter.getValue().getChannel().isOpen()) {
+					iter.getValue().getChannel().abort();
+				}
+			}
+			recvRabbitMQComsumers.clear();
+			
+			for (Entry<String, RabbitMQPublisher> iter : sendRabbitMQPublishers.entrySet()) {
+				if (!iter.getValue().getChannel().isOpen()) {
+					iter.getValue().getChannel().abort();
+				}
+			}
+			sendRabbitMQPublishers.clear();
+			
+			if (connection != null) {
+				connection.close();
+			}
+		} catch (IOException e) {
+			logger.error("[RabbitMQAdminClient].disconnect : error = " + e.toString());
+			throw new ExceptionRabbitMQAdminClientDisconnectionFailure();
+		}
+	}
 	
 	private Integer getRandomIndex(Integer bound/*exclusive*/) {
 		//
@@ -256,6 +269,40 @@ public class RabbitMQClient implements RecoveryListener {
 	public void onMessageAck(String consumerTag) {
 		//
 		recvRabbitMQComsumers.get(consumerTag).ack();
+	}
+	
+	public Boolean publishMessage(String routingKey, String message) {
+		//
+		Set<String> keySet = sendRabbitMQPublishers.keySet();
+		Integer index = getRandomIndex(sendRabbitMQPublishers.size());
+		String publisherTag = (String) keySet.toArray()[index];
+		
+		try {
+			sendRabbitMQPublishers.get(publisherTag).publish(routingKey, message);
+		} catch (IOException | TimeoutException e) {
+			//e.printStackTrace();
+			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.toString());
+		}
+		
+		// TODO : 
+		return false;
+	}
+	
+	public Boolean publishMessage(String message) {
+		//
+		Set<String> keySet = sendRabbitMQPublishers.keySet();
+		Integer index = getRandomIndex(sendRabbitMQPublishers.size());
+		String publisherTag = (String) keySet.toArray()[index];
+		
+		try {
+			sendRabbitMQPublishers.get(publisherTag).publish(message);
+		} catch (IOException | TimeoutException e) {
+			//e.printStackTrace();
+			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.toString());
+		}
+		
+		// TODO :
+		return false;
 	}
 
 	@Override

@@ -43,6 +43,7 @@ public class ApplicationWebMvcConfig implements WebMvcConfigurer {
         return new Docket(DocumentationType.SWAGGER_2)
           .select()
           .apis(RequestHandlerSelectors.any())
+          //.apis(RequestHandlerSelectors.basePackage("com.solitardj9.timelineService.serviceInterface"))
           .paths(PathSelectors.ant("/**"))
           .build();
           //.apiInfo(new ApiInfoBuilder().version("1.0").title("server API").build());

@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client;
+package com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.client.data;
 
 import java.util.Map;
 
