@@ -1,10 +1,10 @@
 # Timeline-Service
 
-## Store a message in timeline
-1) Input is Json document.
-2) 
-
 ## 1. Concept
+Store a message in timeline
+1) Input is Json document with Timestamp.
+2) Managing timelines with spcific key(Map<Key, Timeline>).
+3) Maintain 
 
 ## 2. System Architecture
 <div>
