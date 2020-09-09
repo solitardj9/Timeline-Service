@@ -277,15 +277,15 @@ public class RabbitMQClient implements RecoveryListener {
 		Integer index = getRandomIndex(sendRabbitMQPublishers.size());
 		String publisherTag = (String) keySet.toArray()[index];
 		
+		Boolean result = false;
 		try {
-			sendRabbitMQPublishers.get(publisherTag).publish(routingKey, message);
+			result = sendRabbitMQPublishers.get(publisherTag).publish(routingKey, message);
 		} catch (IOException | TimeoutException e) {
 			//e.printStackTrace();
 			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.toString());
+			return result;
 		}
-		
-		// TODO : 
-		return false;
+		return result;
 	}
 	
 	public Boolean publishMessage(String message) {
@@ -294,15 +294,16 @@ public class RabbitMQClient implements RecoveryListener {
 		Integer index = getRandomIndex(sendRabbitMQPublishers.size());
 		String publisherTag = (String) keySet.toArray()[index];
 		
+		Boolean result = false;
 		try {
-			sendRabbitMQPublishers.get(publisherTag).publish(message);
+			result = sendRabbitMQPublishers.get(publisherTag).publish(message);
 		} catch (IOException | TimeoutException e) {
 			//e.printStackTrace();
 			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.toString());
+			return result;
 		}
 		
-		// TODO :
-		return false;
+		return result;
 	}
 
 	@Override

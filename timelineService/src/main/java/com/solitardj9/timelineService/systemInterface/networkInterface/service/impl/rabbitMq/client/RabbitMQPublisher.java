@@ -41,6 +41,13 @@ public class RabbitMQPublisher {
     	this.toPublish = toPublish;
     	
     	try {
+			this.channel.confirmSelect();
+		} catch (IOException e) {
+			//e.printStackTrace();
+			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.toString());
+		}
+    	
+    	try {
     		
     		while (true) {
     			//
@@ -82,7 +89,7 @@ public class RabbitMQPublisher {
     
     // TODO : confirm listener를 어떻게 붙어야 할까나
     
-    public void publish(String routingKey, String message) throws IOException, TimeoutException {
+    public Boolean publish(String routingKey, String message) throws IOException, TimeoutException {
         //
     	try {
 	    	if (this.toPublish instanceof ExchangeToPublish) {
@@ -91,6 +98,11 @@ public class RabbitMQPublisher {
 	    	else {
 	    		channel.basicPublish("", ((QueueToPublish)toPublish).getQueue(), null, message.getBytes("UTF-8"));
 	    	}
+	    	
+	    	// uses a 1 second timeout
+	        channel.waitForConfirmsOrDie(1000);
+	        return true;
+	        
     	} catch (com.rabbitmq.client.AlreadyClosedException e) {
     		//
     		Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
@@ -98,6 +110,7 @@ public class RabbitMQPublisher {
 		    
         	//e.printStackTrace();
         	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+        	return false;
 		
 		} catch (Exception e) {
 			//
@@ -106,10 +119,11 @@ public class RabbitMQPublisher {
 	    	
 		    //e.printStackTrace();
 	    	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+	    	return false;
 		}
     }
     
-    public void publish(String message) throws IOException, TimeoutException {
+    public Boolean publish(String message) throws IOException, TimeoutException {
         //
     	try {
 	    	if (this.toPublish instanceof ExchangeToPublish) {
@@ -118,21 +132,29 @@ public class RabbitMQPublisher {
 	    	else {
 	    		channel.basicPublish("", ((QueueToPublish)toPublish).getQueue(), null, message.getBytes("UTF-8"));
 	    	}
+	    	
+	    	// uses a 1 second timeout
+	        channel.waitForConfirmsOrDie(1000);
+	        return true;
     	} catch (com.rabbitmq.client.AlreadyClosedException e) {
     		//
+    		e.printStackTrace();
+        	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+    		
     		Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
         	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
-		    
-        	//e.printStackTrace();
-        	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+        	
+        	return false;
 		
 		} catch (Exception e) {
 			//
+			e.printStackTrace();
+	    	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+			
 			Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
 	    	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
 	    	
-		    //e.printStackTrace();
-	    	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+	    	return false;
 		}
     }
 }

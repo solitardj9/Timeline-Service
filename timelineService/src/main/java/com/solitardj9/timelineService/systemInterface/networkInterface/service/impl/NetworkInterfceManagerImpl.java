@@ -21,9 +21,11 @@ import org.springframework.stereotype.Service;
 
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvAck;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvMsg;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericSendAck;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericSendMsg;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvAckParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvMsgParam;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericSendAckParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericSendMsgParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.NetworkInterfceManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.service.impl.rabbitMq.adminClient.RabbitMQAdminClient;
@@ -236,6 +238,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 	@Async
 	public void onGenericSendMsgEvent(GenericSendMsg genericSendMsg) {
 		//
+		String ackId = (String)genericSendMsg.getDataValue(GenericSendMsgParam.ACK_ID.getParam());
 		String routingKey = (String)genericSendMsg.getDataValue(GenericSendMsgParam.ROUTING_KEY.getParam());
 		String message = (String)genericSendMsg.getDataValue(GenericSendMsgParam.MESSAGE.getParam());
 		
@@ -245,12 +248,19 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 			Integer index = getRandomIndex(rabbitMQClients.size());
 			String clientId = (String) keySet.toArray()[index];
 			
+			Boolean ret = false;
 			if (routingKey == null || routingKey.isEmpty()) {
-				rabbitMQClients.get(clientId).publishMessage(message);
+				ret = rabbitMQClients.get(clientId).publishMessage(message);
 			}
 			else {
-				rabbitMQClients.get(clientId).publishMessage(routingKey, message);
+				ret = rabbitMQClients.get(clientId).publishMessage(routingKey, message);
 			}
+			
+			Map<String, Object> data = new HashMap<>();
+			data.put(GenericSendAckParam.ACK_ID.getParam(), ackId);
+			data.put(GenericSendAckParam.ACK.getParam(), ret);
+			
+			applicationEventPublisher.publishEvent(new GenericSendAck(data));
 		}
 	}
 }

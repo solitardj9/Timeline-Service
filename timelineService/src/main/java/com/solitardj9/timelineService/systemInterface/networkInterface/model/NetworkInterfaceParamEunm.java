@@ -49,6 +49,7 @@ public class NetworkInterfaceParamEunm {
 	
 	public enum GenericSendMsgParam {
 	    //
+		ACK_ID("ackId"),
 		ROUTING_KEY("routingKey"),
 		MESSAGE("message")
 		;
@@ -56,6 +57,28 @@ public class NetworkInterfaceParamEunm {
 		private String param;
 		
 		private GenericSendMsgParam(String param) {
+			this.param = param;
+	    }
+		
+		public String getParam() {
+			return param;
+	    }
+		
+		@Override
+		public String toString() {
+			return param;
+	    }
+	}
+	
+	public enum GenericSendAckParam {
+	    //
+		ACK_ID("ackId"),
+		ACK("ack")
+		;
+		
+		private String param;
+		
+		private GenericSendAckParam(String param) {
 			this.param = param;
 	    }
 		

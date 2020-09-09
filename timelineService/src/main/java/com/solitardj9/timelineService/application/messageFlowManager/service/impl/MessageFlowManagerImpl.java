@@ -2,6 +2,7 @@ package com.solitardj9.timelineService.application.messageFlowManager.service.im
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +19,11 @@ import com.solitardj9.timelineService.application.messageFlowManager.model.Publi
 import com.solitardj9.timelineService.application.messageFlowManager.service.MessageFlowManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvAck;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvMsg;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericSendAck;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericSendMsg;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvAckParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericRecvMsgParam;
+import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericSendAckParam;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.NetworkInterfaceParamEunm.GenericSendMsgParam;
 
 @Service("messageFlowManager")
@@ -49,7 +52,7 @@ public class MessageFlowManagerImpl implements MessageFlowManager {
 			applicationEventPublisher.publishEvent(consumeMessage);
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.info("[MessageFlowManager].onGenericRecvMsgEvent : " + e.toString());
+			logger.error("[MessageFlowManager].onGenericRecvMsgEvent : " + e.toString());
 		} finally {
 			Map<String, Object> data = new HashMap<>();
 			data.put(GenericRecvAckParam.CLIENT_ID.getParam(), clientId);
@@ -68,12 +71,29 @@ public class MessageFlowManagerImpl implements MessageFlowManager {
 			message = om.writeValueAsString(publishMessage);
 			
 			Map<String, Object> data = new HashMap<>();
+			
+			String ackId = UUID.randomUUID().toString();
+			data.put(GenericSendMsgParam.ACK_ID.getParam(), ackId);
 			data.put(GenericSendMsgParam.MESSAGE.getParam(), message);
+			
+			logger.info("[MessageFlowManager].onPublishMessage : ack ID = " + ackId);
 			
 			applicationEventPublisher.publishEvent(new GenericSendMsg(data));
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.info("[MessageFlowManager].onPublishMessage : " + e.toString());
+			logger.error("[MessageFlowManager].onPublishMessage : " + e.toString());
+		}
+	}
+	
+	@EventListener
+	@Async
+	public void onGenericSendAckEvent(GenericSendAck genericSendAck) {
+		//
+		try {
+			logger.info("[MessageFlowManager].onGenericSendAckEvent : ack ID = " + genericSendAck.getDataValue(GenericSendAckParam.ACK_ID.getParam()));
+		} catch (Exception e) {
+			//e.printStackTrace();
+			logger.error("[MessageFlowManager].onGenericSendAckEvent : " + e.toString());
 		}
 	}
 }
