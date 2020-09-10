@@ -1,6 +1,11 @@
 package com.solitardj9.timelineService.service.serviceInstancesManager.service.impl;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.sql.Timestamp;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,6 +15,7 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.hazelcast.core.EntryEvent;
@@ -32,6 +38,11 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	@Autowired
 	InMemoryManager inMemoryManager;
 	
+	@Value("${server.port}")
+	private Integer port;
+	
+	private String ip;
+	
 	private Integer backupCount = 2;
 	
 	private Boolean readBackupData = true;
@@ -47,6 +58,28 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 		} catch (ExceptionHazelcastDataStructureCreationFailure | ExceptionHazelcastDataStructureNotFoundFailure e) {
 			logger.error("[ServiceInstancesManager].init : error = " + e.toString());
 		}
+		
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			while (interfaces.hasMoreElements()) {
+				NetworkInterface iface = interfaces.nextElement();
+				// filters out 127.0.0.1 and inactive interfaces
+				if (iface.isLoopback() || !iface.isUp())
+					continue;
+				
+				Enumeration<InetAddress> addresses = iface.getInetAddresses();
+				while(addresses.hasMoreElements()) {
+					InetAddress addr = addresses.nextElement();
+					if(Inet4Address.class == addr.getClass()) {
+						ip = addr.getHostAddress();
+						logger.error("[ServiceInstancesManager].init : ip = " + ip);
+					}
+				}
+			}
+		} catch (SocketException e) {
+			//e.printStackTrace();
+			logger.error("[ServiceInstancesManager].init : error = " + e.toString());
+		}
 	}
 	
 	@Override
@@ -59,7 +92,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 		//
 		try {
 			if (!inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).containsKey(serviceName)) {
-				ServiceInstance serviceInstance = new ServiceInstance(serviceName, new Timestamp(System.currentTimeMillis()));
+				ServiceInstance serviceInstance = new ServiceInstance(serviceName, ip, port, new Timestamp(System.currentTimeMillis()));
 				inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).put(serviceName, serviceInstance);
 			}
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
@@ -81,6 +114,10 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	public void entryAdded(EntryEvent<Object, Object> event) {
 		//
 		String serviceName = (String)event.getKey();
+		ServiceInstance serviceInstance = (ServiceInstance)event.getValue();
+		
+		logger.info("[ServiceInstancesManager].entryAdded : serviceInstance = " + serviceInstance.toString());
+		
 		if (serviceInstancesCallback != null) {
 			serviceInstancesCallback.registeredService(serviceName);
 		}
