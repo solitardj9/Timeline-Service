@@ -33,7 +33,7 @@ public interface TimelineManager {
 	
 	public void updateAll(String timeline, TreeMap<Long/*Timestamp*/, String/*value*/> values) throws ExceptionTimelineResourceNotFound;
 	
-	public void remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound;
+	public String remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound;
 	
 	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound;
 	
@@ -44,4 +44,6 @@ public interface TimelineManager {
 	public void clear(String timeline) throws ExceptionTimelineResourceNotFound;
 	
 	public Boolean isEmpty(String timeline) throws ExceptionTimelineResourceNotFound;
+	
+	public Integer size(String timeline) throws ExceptionTimelineResourceNotFound;
 }
