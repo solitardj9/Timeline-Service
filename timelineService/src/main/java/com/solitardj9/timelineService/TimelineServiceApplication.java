@@ -23,39 +23,39 @@ public class TimelineServiceApplication {
 		System.out.println("put value");
 		for (int i = 0 ; i < 10 ; i++) {
 			timelineName = "timeline" + i;
-			timelineManager.addTimeline(timelineName);
+			//timelineManager.addTimeline(timelineName);
 			
 			for (int j = 0 ; j < 10 ; j++) {
 				
-				timelineManager.put(timelineName, j, value);
+				//timelineManager.put(timelineName, j, value);
 			}
 		}
 		System.out.println("//----------------------------------------------------------");
 		System.out.println("display value");
 		for (int i = 0 ; i < 10 ; i++) {
 			timelineName = "timeline" + i;
-			System.out.println(timelineManager.getTimeline(timelineName).toString());
+			//System.out.println(timelineManager.getTimeline(timelineName).toString());
 		}
 		System.out.println("put new value");
 		for (int i = 0 ; i < 10 ; i++) {
 			timelineName = "timeline" + i;
-			timelineManager.put(timelineName, 3, "new value");
+			//timelineManager.put(timelineName, 3, "new value");
 		}
 		System.out.println("display new value");
 		for (int i = 0 ; i < 10 ; i++) {
 			timelineName = "timeline" + i;
-			System.out.println(timelineManager.getTimeline(timelineName).toString());
+			//System.out.println(timelineManager.getTimeline(timelineName).toString());
 		}
 		System.out.println("//----------------------------------------------------------");
 		System.out.println("remove value");
 		for (int i = 0 ; i < 10 ; i++) {
 			timelineName = "timeline" + i;
-			timelineManager.remove(timelineName, 7);
+			//timelineManager.remove(timelineName, 7);
 		}
 		System.out.println("display removed value");
 		for (int i = 0 ; i < 10 ; i++) {
 			timelineName = "timeline" + i;
-			System.out.println(timelineManager.getTimeline(timelineName).toString());
+			//System.out.println(timelineManager.getTimeline(timelineName).toString());
 		}
 	}
 }

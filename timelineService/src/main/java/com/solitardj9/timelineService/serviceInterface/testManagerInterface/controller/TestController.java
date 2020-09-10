@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.solitardj9.timelineService.application.testManager.service.TestManager;
 
 @RestController
-@RequestMapping(value="/timeline/testService")
+@RequestMapping(value="/timeline-service/test")
 public class TestController {
 	
 	private static final Logger logger = LoggerFactory.getLogger(TestController.class);

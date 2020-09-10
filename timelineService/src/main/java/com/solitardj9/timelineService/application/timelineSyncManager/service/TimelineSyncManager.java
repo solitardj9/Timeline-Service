@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.application.timelineManager.service;
+package com.solitardj9.timelineService.application.timelineSyncManager.service;
 
 import java.util.List;
 import java.util.Map;
@@ -7,7 +7,7 @@ import java.util.TreeMap;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 
-public interface TimelineManager {
+public interface TimelineSyncManager {
 	//
 	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure;
 	
@@ -42,6 +42,4 @@ public interface TimelineManager {
 	public void removeByBefore(String timeline, Long toTime/*exclusive*/) throws ExceptionTimelineResourceNotFound;
 	
 	public void clear(String timeline) throws ExceptionTimelineResourceNotFound;
-	
-	public Boolean isEmpty(String timeline) throws ExceptionTimelineResourceNotFound;
 }
