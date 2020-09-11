@@ -56,6 +56,8 @@ public class JsonKeyPathObject {
 	}
 
 	public String getKeyPath() {
+		if (getPath() == null || getPath().isEmpty())
+			return getKey();
 		return getPath() + "." + getKey();
 	}
 	
