@@ -3,6 +3,7 @@ package com.solitardj9.timelineService.application.timelineManager.service.impl;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.solitardj9.timelineService.application.timelineManager.service.TimelineManager;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
+import com.solitardj9.timelineService.utils.jsonUtil.JsonUtil;
 
 @Service("timelineManager")
 public class TimelineManagerImpl implements TimelineManager {
@@ -146,14 +148,35 @@ public class TimelineManagerImpl implements TimelineManager {
 
 	@Override
 	public void update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-		
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		String prevValue = timelines.get(timeline).get(time);
+		if (prevValue == null || prevValue.isEmpty()) {
+			timelines.get(timeline).put(time, value);
+		}
+		else {
+			String mergedJsonString = JsonUtil.mergeJsonString(prevValue, value);
+			timelines.get(timeline).put(time, mergedJsonString);
+		}
 	}
 
 	@Override
 	public void updateAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
 		
+		for (Entry<Long, String> iter : values.entrySet()) {
+			try {
+				update(timeline, iter.getKey(), iter.getValue());
+			} catch (Exception e) {
+				//e.printStackTrace();
+				logger.error("[TimelineManager].updateAll : error = " + e.toString());
+			}
+		}
 	}
 
 	@Override
