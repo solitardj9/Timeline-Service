@@ -57,5 +57,7 @@ public class TimelineServiceApplication {
 			timelineName = "timeline" + i;
 			//System.out.println(timelineManager.getTimeline(timelineName).toString());
 		}
+		
+		//https://crunchify.com/java-concurrentnavigablemap-and-concurrentskiplistmap-example-with-all-details/
 	}
 }

@@ -1,9 +1,11 @@
 package com.solitardj9.timelineService.application.timelineManager.service.impl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -171,7 +173,14 @@ public class TimelineManagerImpl implements TimelineManager {
 		
 		for (Entry<Long, String> iter : values.entrySet()) {
 			try {
-				update(timeline, iter.getKey(), iter.getValue());
+				String prevValue = timelines.get(timeline).get(iter.getKey());
+				if (prevValue == null || prevValue.isEmpty()) {
+					timelines.get(timeline).put(iter.getKey(), iter.getValue());
+				}
+				else {
+					String mergedJsonString = JsonUtil.mergeJsonString(prevValue, iter.getValue());
+					timelines.get(timeline).put(iter.getKey(), mergedJsonString);
+				}
 			} catch (Exception e) {
 				//e.printStackTrace();
 				logger.error("[TimelineManager].updateAll : error = " + e.toString());
@@ -190,26 +199,56 @@ public class TimelineManagerImpl implements TimelineManager {
 
 	@Override
 	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
 		
+		for (Long time : times) {
+			timelines.get(timeline).remove(time);
+		}
 	}
 
 	@Override
 	public void removeByPeriod(String timeline, Long fromTime, Long toTime) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-		
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+
+		Set<Long> keys = timelines.get(timeline).subMap(fromTime, toTime).keySet();
+		if (keys != null) {
+			Set<Long> tmpKeys = new HashSet<Long>(keys);
+			for (Long tmpKey : tmpKeys) {
+				timelines.get(timeline).remove(tmpKey);
+			}
+		}
 	}
 
 	@Override
 	public void removeByBefore(String timeline, Long toTime) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-		
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+
+		Set<Long> keys = timelines.get(timeline).headMap(toTime).keySet();
+		if (keys != null) {
+			Set<Long> tmpKeys = new HashSet<Long>(keys);
+			for (Long tmpKey : tmpKeys) {
+				timelines.get(timeline).remove(tmpKey);
+			}
+		}
 	}
 
 	@Override
 	public void clear(String timeline) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
 		
+		timelines.get(timeline).clear();
 	}
 
 	@Override
