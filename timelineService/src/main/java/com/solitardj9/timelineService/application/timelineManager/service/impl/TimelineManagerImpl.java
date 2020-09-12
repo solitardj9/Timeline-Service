@@ -8,6 +8,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +25,7 @@ public class TimelineManagerImpl implements TimelineManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(TimelineManagerImpl.class);
 	
-	private Map<String, TreeMap<Long, String>> timelines = new ConcurrentHashMap<>();
+	private Map<String, ConcurrentNavigableMap<Long, String>> timelines = new ConcurrentHashMap<>();
 	
 	@Override
 	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure {
@@ -31,7 +33,7 @@ public class TimelineManagerImpl implements TimelineManager {
 		if (timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineConflictFailure();
 		}
-		timelines.put(timeline, new TreeMap<Long, String>());
+		timelines.put(timeline, new ConcurrentSkipListMap<Long, String>());
 	}
 
 	@Override
