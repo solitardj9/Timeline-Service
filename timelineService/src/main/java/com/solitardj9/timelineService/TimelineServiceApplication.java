@@ -1,10 +1,16 @@
 package com.solitardj9.timelineService;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import com.solitardj9.timelineService.application.timelineManager.service.TimelineManager;
+import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
+import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 
 @SpringBootApplication
 public class TimelineServiceApplication {
@@ -16,46 +22,117 @@ public class TimelineServiceApplication {
 		TimelineManager timelineManager = ((TimelineManager)context.getBean("timelineManager"));
 		
 		String timelineName = "";
-		String value = "{\"key1\":\"value1\", \"key2\":\"value2\"}";
+		String value1 = "{\"key1\":\"value1\", \"key2\":\"value2\"}";
+		String value2 = "{\"key1\":\"value3\", \"key2\":\"value4\"}";
+		String value3 = "{\"key3\":\"value5\", \"key4\":\"value6\"}";
 		
+		Integer testCount = 10;
+		Integer valueCount = 10;
+		
+		List<Long> timelineKeys = new ArrayList<>();
+		for (int j = 0 ; j < valueCount ; j++) {
+			Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+			timelineKeys.add(timestamp.getTime());
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 		
 		System.out.println("//----------------------------------------------------------");
 		System.out.println("put value");
-		for (int i = 0 ; i < 10 ; i++) {
+		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
-			//timelineManager.addTimeline(timelineName);
+			try {
+				timelineManager.addTimeline(timelineName);
+			} catch (ExceptionTimelineConflictFailure e) {
+				e.printStackTrace();
+			}
 			
-			for (int j = 0 ; j < 10 ; j++) {
-				
-				//timelineManager.put(timelineName, j, value);
+			for (Long timelienKey : timelineKeys) {
+				try {
+					timelineManager.put(timelineName, timelienKey, value1);
+				} catch (ExceptionTimelineResourceNotFound e) {
+					e.printStackTrace();
+				}
 			}
 		}
+		
+		for (int i = 0 ; i < testCount ; i++) {
+			timelineName = "timeline" + i;
+			try {
+				System.out.println(timelineManager.getTimeline(timelineName).toString());
+			} catch (ExceptionTimelineResourceNotFound e) {
+				e.printStackTrace();
+			}
+		}
+		
 		System.out.println("//----------------------------------------------------------");
-		System.out.println("display value");
-		for (int i = 0 ; i < 10 ; i++) {
-			timelineName = "timeline" + i;
-			//System.out.println(timelineManager.getTimeline(timelineName).toString());
-		}
 		System.out.println("put new value");
-		for (int i = 0 ; i < 10 ; i++) {
+		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
-			//timelineManager.put(timelineName, 3, "new value");
+			
+			for (Long timelienKey : timelineKeys) {
+				try {
+					timelineManager.put(timelineName, timelienKey, value2);
+				} catch (ExceptionTimelineResourceNotFound e) {
+					e.printStackTrace();
+				}
+			}
 		}
-		System.out.println("display new value");
-		for (int i = 0 ; i < 10 ; i++) {
+		
+		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
-			//System.out.println(timelineManager.getTimeline(timelineName).toString());
+			try {
+				System.out.println(timelineManager.getTimeline(timelineName).toString());
+			} catch (ExceptionTimelineResourceNotFound e) {
+				e.printStackTrace();
+			}
 		}
+		
+		System.out.println("//----------------------------------------------------------");
+		System.out.println("update new value");
+		for (int i = 0 ; i < testCount ; i++) {
+			timelineName = "timeline" + i;
+			
+			for (Long timelienKey : timelineKeys) {
+				try {
+					timelineManager.update(timelineName, timelienKey, value3);
+				} catch (ExceptionTimelineResourceNotFound e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		for (int i = 0 ; i < testCount ; i++) {
+			timelineName = "timeline" + i;
+			try {
+				System.out.println(timelineManager.getTimeline(timelineName).toString());
+			} catch (ExceptionTimelineResourceNotFound e) {
+				e.printStackTrace();
+			}
+		}
+		
 		System.out.println("//----------------------------------------------------------");
 		System.out.println("remove value");
-		for (int i = 0 ; i < 10 ; i++) {
+		Long removeKey = timelineKeys.get(3);
+		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
-			//timelineManager.remove(timelineName, 7);
+			try {
+				timelineManager.remove(timelineName, removeKey);
+			} catch (ExceptionTimelineResourceNotFound e) {
+				e.printStackTrace();
+			}
 		}
-		System.out.println("display removed value");
-		for (int i = 0 ; i < 10 ; i++) {
+		
+		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
-			//System.out.println(timelineManager.getTimeline(timelineName).toString());
+			try {
+				System.out.println(timelineManager.getTimeline(timelineName).toString());
+			} catch (ExceptionTimelineResourceNotFound e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }

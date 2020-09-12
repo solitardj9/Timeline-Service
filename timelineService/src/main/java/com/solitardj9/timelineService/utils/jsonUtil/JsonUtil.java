@@ -31,21 +31,21 @@ public class JsonUtil {
             logger.debug("[JsonUtil].updateJsonString : error = updateJsonString is " + updateJsonString);
         }
 		
-		DocumentContext dcSnapshot = JsonPath.parse(jsonString);
+		DocumentContext dc = JsonPath.parse(jsonString);
 		
 		List<JsonKeyPathObject> jsonPathKeyObjects = new ArrayList<>();
-		extractJsonKeyPathObjectFormJsonString(jsonString, jsonPathKeyObjects);
+		extractJsonKeyPathObjectFormJsonString(updateJsonString, jsonPathKeyObjects);
 		
 		for (JsonKeyPathObject iter : jsonPathKeyObjects) {
-			if (isExistKeyPath(dcSnapshot, iter.getKeyPath())) {	// update
-				updateJsonDocument(dcSnapshot, iter.getKeyPath(), iter.getObject());
+			if (isExistKeyPath(dc, iter.getKeyPath())) {	// update
+				updateJsonDocument(dc, iter.getKeyPath(), iter.getObject());
 			}
 			else { // insert
-				insertJsonDocument(dcSnapshot, iter.getPathList(), iter.getKey(), iter.getObject());
+				insertJsonDocument(dc, iter.getPathList(), iter.getKey(), iter.getObject());
 			}
 		}
 		
-		return dcSnapshot.jsonString();
+		return dc.jsonString();
     }
 	
 	@SuppressWarnings({ "unchecked" })
