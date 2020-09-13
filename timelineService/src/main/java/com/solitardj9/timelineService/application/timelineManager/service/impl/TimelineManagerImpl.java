@@ -28,12 +28,13 @@ public class TimelineManagerImpl implements TimelineManager {
 	private Map<String, ConcurrentNavigableMap<Long, String>> timelines = new ConcurrentHashMap<>();
 	
 	@Override
-	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure {
+	public String addTimeline(String timeline) throws ExceptionTimelineConflictFailure {
 		//
 		if (timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineConflictFailure();
 		}
 		timelines.put(timeline, new ConcurrentSkipListMap<Long, String>());
+		return timeline;
 	}
 
 	@Override

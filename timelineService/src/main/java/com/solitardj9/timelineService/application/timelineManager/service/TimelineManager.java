@@ -8,8 +8,13 @@ import com.solitardj9.timelineService.application.timelineManager.service.except
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 
 public interface TimelineManager {
-	//
-	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure;
+	
+	/**
+	 * @param timeline
+	 * @return timeline if success
+	 * @throws ExceptionTimelineConflictFailure
+	 */
+	public String addTimeline(String timeline) throws ExceptionTimelineConflictFailure;
 	
 	public void deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound;
 	
