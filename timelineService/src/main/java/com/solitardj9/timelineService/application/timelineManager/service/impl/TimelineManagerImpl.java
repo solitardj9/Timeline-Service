@@ -1,5 +1,6 @@
 package com.solitardj9.timelineService.application.timelineManager.service.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,8 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.solitardj9.timelineService.application.timelineManager.model.PutValue;
+import com.solitardj9.timelineService.application.timelineManager.model.PutValues;
+import com.solitardj9.timelineService.application.timelineManager.model.Remove;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByBefore;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByPeriod;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByTimes;
 import com.solitardj9.timelineService.application.timelineManager.service.TimelineManager;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
+import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 import com.solitardj9.timelineService.utils.jsonUtil.JsonUtil;
 
@@ -38,14 +46,20 @@ public class TimelineManagerImpl implements TimelineManager {
 	}
 
 	@Override
-	public void deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
+	public String deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
 		}
 		timelines.remove(timeline);
+		return timeline;
 	}
-
+	
+	@Override
+	public Set<String> getkeySetOfTimelines() {
+		//
+		return new HashSet<String>(timelines.keySet());
+	}
 	
 	@Override
 	public TreeMap<Long, String> getTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
@@ -54,6 +68,15 @@ public class TimelineManagerImpl implements TimelineManager {
 			throw new ExceptionTimelineResourceNotFound();
 		}
 		return new TreeMap<Long, String>(timelines.get(timeline));
+	}
+	
+	@Override
+	public Set<Long/*Timestamp*/> getkeySetOfTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		return new HashSet<Long>(timelines.get(timeline).keySet());
 	}
 
 	/**
@@ -134,86 +157,154 @@ public class TimelineManagerImpl implements TimelineManager {
 	}
 	
 	@Override
-	public void put(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound {
-		//
-		if (!timelines.containsKey(timeline)) {
-			throw new ExceptionTimelineResourceNotFound();
-		}
-		timelines.get(timeline).put(time, value);
-	}
-
-	@Override
-	public void putAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound {
-		//
-		if (!timelines.containsKey(timeline)) {
-			throw new ExceptionTimelineResourceNotFound();
-		}
-		timelines.get(timeline).putAll(values);
-	}
-
-	@Override
-	public void update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound {
-		//
-		if (!timelines.containsKey(timeline)) {
-			throw new ExceptionTimelineResourceNotFound();
-		}
-		String prevValue = timelines.get(timeline).get(time);
-		if (prevValue == null || prevValue.isEmpty()) {
-			timelines.get(timeline).put(time, value);
-		}
-		else {
-			String mergedJsonString = JsonUtil.mergeJsonString(prevValue, value);
-			timelines.get(timeline).put(time, mergedJsonString);
-		}
-	}
-
-	@Override
-	public void updateAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound {
+	public PutValue put(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
 		}
 		
+		try {
+			timelines.get(timeline).put(time, value);
+			return new PutValue(timeline, time, value);
+		} catch(Exception e) {
+			logger.error("[TimelineManager].put : error = " + e.toString());
+			throw new ExceptionTimelineInternalFailure();
+		}
+	}
+
+	@Override
+	public PutValues putAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		try {
+			timelines.get(timeline).putAll(values);
+			return new PutValues(timeline, values);
+		} catch(Exception e) {
+			logger.error("[TimelineManager].putAll : error = " + e.toString());
+			throw new ExceptionTimelineInternalFailure();
+		}
+	}
+
+	@Override
+	public PutValue update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		String prevValue = timelines.get(timeline).get(time);
+		if (prevValue == null || prevValue.isEmpty()) {
+			//
+			try {
+				timelines.get(timeline).put(time, value);
+				return new PutValue(timeline, time, value);
+			} catch(Exception e) {
+				logger.error("[TimelineManager].update : error = " + e.toString());
+				throw new ExceptionTimelineInternalFailure();
+			}
+		}
+		else {
+			//
+			try {
+				String mergedJsonString = JsonUtil.mergeJsonString(prevValue, value);
+				timelines.get(timeline).put(time, mergedJsonString);
+				return new PutValue(timeline, time, mergedJsonString);
+			} catch(Exception e) {
+				logger.error("[TimelineManager].update : error = " + e.toString());
+				throw new ExceptionTimelineInternalFailure();
+			}
+		}
+	}
+
+	@Override
+	public PutValues updateAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		TreeMap<Long, String> retValues = new TreeMap<>();
 		for (Entry<Long, String> iter : values.entrySet()) {
 			try {
 				String prevValue = timelines.get(timeline).get(iter.getKey());
 				if (prevValue == null || prevValue.isEmpty()) {
-					timelines.get(timeline).put(iter.getKey(), iter.getValue());
+					//
+					try {
+						timelines.get(timeline).put(iter.getKey(), iter.getValue());
+						retValues.put(iter.getKey(), iter.getValue());
+					} catch(Exception e) {
+						logger.error("[TimelineManager].updateAll : error = " + e.toString());
+					}
 				}
 				else {
-					String mergedJsonString = JsonUtil.mergeJsonString(prevValue, iter.getValue());
-					timelines.get(timeline).put(iter.getKey(), mergedJsonString);
+					//
+					try {
+						String mergedJsonString = JsonUtil.mergeJsonString(prevValue, iter.getValue());
+						timelines.get(timeline).put(iter.getKey(), mergedJsonString);
+						retValues.put(iter.getKey(), mergedJsonString);
+					} catch(Exception e) {
+						logger.error("[TimelineManager].updateAll : error = " + e.toString());
+					}
 				}
 			} catch (Exception e) {
 				//e.printStackTrace();
 				logger.error("[TimelineManager].updateAll : error = " + e.toString());
 			}
 		}
-	}
-
-	@Override
-	public String remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound {
-		//
-		if (!timelines.containsKey(timeline)) {
-			throw new ExceptionTimelineResourceNotFound();
+		
+		if (retValues.isEmpty()) {
+			logger.error("[TimelineManager].updateAll : nothing to be updated.");
+			throw new ExceptionTimelineInternalFailure(); 
 		}
-		return timelines.get(timeline).remove(time);
+		
+		return new PutValues(timeline, retValues);
 	}
 
 	@Override
-	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound {
+	public Remove remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
 		}
 		
-		for (Long time : times) {
+		try {
 			timelines.get(timeline).remove(time);
+			return new Remove(timeline, time);
+		} catch(Exception e) {
+			throw new ExceptionTimelineInternalFailure();
 		}
 	}
 
 	@Override
-	public void removeByPeriod(String timeline, Long fromTime, Long toTime) throws ExceptionTimelineResourceNotFound {
+	public RemoveByTimes removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		if (!timelines.containsKey(timeline)) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		List<Long> retValues = new ArrayList<>();
+		for (Long time : times) {
+			try {
+				timelines.get(timeline).remove(time);
+				retValues.add(time);
+			} catch(Exception e) {
+				logger.error("[TimelineManager].removeByTimes : error = " + e.toString());
+			}
+		}
+		
+		if (retValues.isEmpty()) {
+			logger.error("[TimelineManager].removeByTimes : nothing to be deleted.");
+			throw new ExceptionTimelineInternalFailure(); 
+		}
+		
+		return new RemoveByTimes(timeline, retValues);
+	}
+
+	@Override
+	public RemoveByPeriod removeByPeriod(String timeline, Long fromTime, Long toTime) throws ExceptionTimelineResourceNotFound {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
@@ -226,10 +317,12 @@ public class TimelineManagerImpl implements TimelineManager {
 				timelines.get(timeline).remove(tmpKey);
 			}
 		}
+		
+		return new RemoveByPeriod(timeline, fromTime, toTime);
 	}
 
 	@Override
-	public void removeByBefore(String timeline, Long toTime) throws ExceptionTimelineResourceNotFound {
+	public RemoveByBefore removeByBefore(String timeline, Long toTime) throws ExceptionTimelineResourceNotFound {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
@@ -242,16 +335,23 @@ public class TimelineManagerImpl implements TimelineManager {
 				timelines.get(timeline).remove(tmpKey);
 			}
 		}
+		
+		return new RemoveByBefore(timeline, toTime);
 	}
 
 	@Override
-	public void clear(String timeline) throws ExceptionTimelineResourceNotFound {
+	public String clear(String timeline) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
 		}
 		
-		timelines.get(timeline).clear();
+		try {
+			timelines.get(timeline).clear();
+			return timeline;
+		} catch(Exception e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
 	}
 
 	@Override

@@ -50,14 +50,14 @@ public class TimelienManagerTest {
 		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
 			try {
-				timelineManager.addTimeline(timelineName);
+				System.out.println("addTimeline : " + timelineManager.addTimeline(timelineName));
 			} catch (ExceptionTimelineConflictFailure e) {
 				e.printStackTrace();
 			}
 			
 			for (Long timelienKey : timelineKeys) {
 				try {
-					timelineManager.put(timelineName, timelienKey, value1);
+					System.out.println("put : " + timelineManager.put(timelineName, timelienKey, value1));
 				} catch (ExceptionTimelineResourceNotFound e) {
 					e.printStackTrace();
 				}
@@ -80,7 +80,7 @@ public class TimelienManagerTest {
 			
 			for (Long timelienKey : timelineKeys) {
 				try {
-					timelineManager.put(timelineName, timelienKey, value2);
+					System.out.println("put : " + timelineManager.put(timelineName, timelienKey, value2));
 				} catch (ExceptionTimelineResourceNotFound e) {
 					e.printStackTrace();
 				}
@@ -103,7 +103,7 @@ public class TimelienManagerTest {
 			
 			for (Long timelienKey : timelineKeys) {
 				try {
-					timelineManager.update(timelineName, timelienKey, value3);
+					System.out.println("update : " + timelineManager.update(timelineName, timelienKey, value3));
 				} catch (ExceptionTimelineResourceNotFound e) {
 					e.printStackTrace();
 				}
@@ -125,7 +125,7 @@ public class TimelienManagerTest {
 		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
 			try {
-				timelineManager.remove(timelineName, removeKey);
+				System.out.println("remove : " + timelineManager.remove(timelineName, removeKey));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				e.printStackTrace();
 			}
