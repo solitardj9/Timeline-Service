@@ -1,119 +1,209 @@
 package com.solitardj9.timelineService.application.timelineSyncManager.service.impl;
 
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.solitardj9.timelineService.application.replicationManager.service.ReplicationManager;
+import com.solitardj9.timelineService.application.timelineManager.model.PutValue;
+import com.solitardj9.timelineService.application.timelineManager.model.PutValues;
+import com.solitardj9.timelineService.application.timelineManager.model.Remove;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByBefore;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByPeriod;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByTimes;
+import com.solitardj9.timelineService.application.timelineManager.service.TimelineManager;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
+import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineSyncManager;
 
 @Service("timelineSyncManager")
 public class TimelineSyncManagerImpl implements TimelineSyncManager {
-
+	
+	@Autowired
+	TimelineManager timelineManager;
+	
+	@Autowired
+	ReplicationManager replicationManager;
+	
 	@Override
 	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure {
-		// TODO Auto-generated method stub
-
+		//
+		String addedTimeline = null;
+		try {
+			addedTimeline = timelineManager.addTimeline(timeline);
+		} catch (ExceptionTimelineConflictFailure e) {
+			throw new ExceptionTimelineConflictFailure();
+		}
+		
+		if (addedTimeline != null) {
+			replicationManager.replicateAddTimeline(addedTimeline);
+		}
 	}
 
 	@Override
 	public void deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
+		//
+		String deletedTimeline = null;
+		try {
+			deletedTimeline = timelineManager.deleteTimeline(timeline);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		if (deletedTimeline != null) {
+			replicationManager.replicateDeleteTimeline(deletedTimeline);
+		}
+	}
+	
+	@Override
+	public void put(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		PutValue puttedValue = null;
+		try {
+			puttedValue = timelineManager.put(timeline, time, value);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (puttedValue != null) {
+			replicationManager.replicatePut(puttedValue);
+		}
 	}
 
 	@Override
-	public TreeMap<Long, String> getTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-		return null;
+	public void putAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		PutValues puttedValues = null;
+		try {
+			puttedValues = timelineManager.putAll(timeline, values);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (puttedValues != null) {
+			replicationManager.replicatePutAll(puttedValues);
+		}
 	}
 
 	@Override
-	public Map<String, TreeMap<Long, String>> getTimelines(List<String> timelines) {
-		// TODO Auto-generated method stub
-		return null;
+	public void update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		PutValue updatedValue = null;
+		try {
+			updatedValue = timelineManager.update(timeline, time, value);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (updatedValue != null) {
+			replicationManager.replicateUpdate(updatedValue);
+		}
 	}
 
 	@Override
-	public TreeMap<Long, String> getTimelineByTime(String timeline, Long time)
-			throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-		return null;
+	public void updateAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		PutValues updatedValues = null;
+		try {
+			updatedValues = timelineManager.updateAll(timeline, values);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (updatedValues != null) {
+			replicationManager.replicateUpdateAll(updatedValues);
+		}
 	}
 
 	@Override
-	public Map<String, TreeMap<Long, String>> getTimelinesByTime(List<String> timelines, Long time) {
-		// TODO Auto-generated method stub
-		return null;
+	public void remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		Remove removed = null;
+		try {
+			removed = timelineManager.remove(timeline, time);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (removed != null) {
+			replicationManager.replicateRemove(removed);
+		}
 	}
 
 	@Override
-	public TreeMap<Long, String> getTimelineByPreiod(String timeline, Long fromTime, Long toTime)
-			throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Map<String, TreeMap<Long, String>> getTimelinesByPreiod(List<String> timelines, Long fromTime, Long toTime) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void put(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void putAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void updateAll(String timeline, TreeMap<Long, String> values) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
+	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		RemoveByTimes removedByTimes = null;
+		try {
+			removedByTimes = timelineManager.removeByTimes(timeline, times);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (removedByTimes != null) {
+			replicationManager.replicateRemoveByTimes(removedByTimes);
+		}
 	}
 
 	@Override
 	public void removeByPeriod(String timeline, Long fromTime, Long toTime) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
+		//
+		RemoveByPeriod removedByPeriod = null;
+		try {
+			removedByPeriod = timelineManager.removeByPeriod(timeline, fromTime, toTime);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		if (removedByPeriod != null) {
+			replicationManager.replicateRemoveByPeriod(removedByPeriod);
+		}
 	}
 
 	@Override
 	public void removeByBefore(String timeline, Long toTime) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
+		//
+		RemoveByBefore removedByBefore = null;
+		try {
+			removedByBefore = timelineManager.removeByBefore(timeline, toTime);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		}
+		
+		if (removedByBefore != null) {
+			replicationManager.replicateRemoveByBefore(removedByBefore);
+		}
 	}
 
 	@Override
-	public void clear(String timeline) throws ExceptionTimelineResourceNotFound {
-		// TODO Auto-generated method stub
-
+	public void clear(String timeline) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure {
+		//
+		String clearedTmeline = null;
+		try {
+			clearedTmeline = timelineManager.clear(timeline);
+		} catch (ExceptionTimelineResourceNotFound e) {
+			throw new ExceptionTimelineResourceNotFound();
+		} catch (ExceptionTimelineInternalFailure e) {
+			throw new ExceptionTimelineInternalFailure();
+		}
+		
+		if (clearedTmeline != null) {
+			replicationManager.replicateClear(clearedTmeline);
+		}
 	}
 }

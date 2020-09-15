@@ -5,6 +5,12 @@ import org.springframework.stereotype.Service;
 
 import com.solitardj9.timelineService.application.messageFlowManager.model.ConsumeMessage;
 import com.solitardj9.timelineService.application.replicationManager.service.ReplicationManager;
+import com.solitardj9.timelineService.application.timelineManager.model.PutValue;
+import com.solitardj9.timelineService.application.timelineManager.model.PutValues;
+import com.solitardj9.timelineService.application.timelineManager.model.Remove;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByBefore;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByPeriod;
+import com.solitardj9.timelineService.application.timelineManager.model.RemoveByTimes;
 
 @Service("replicationManager")
 public class ReplicationManagerImpl implements ReplicationManager {
@@ -61,6 +67,72 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'clear'")
 	public void onConsumeMessageForClear(ConsumeMessage consumeMessage) {
+		
+	}
+
+	@Override
+	public void replicateAddTimeline(String timeline) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateDeleteTimeline(String timeline) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicatePut(PutValue putValue) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicatePutAll(PutValues putValues) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateUpdate(PutValue putValue) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateUpdateAll(PutValues putValues) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateRemove(Remove remove) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateRemoveByTimes(RemoveByTimes removeByTimes) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateRemoveByPeriod(RemoveByPeriod removeByPeriod) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateRemoveByBefore(RemoveByBefore removeByBefore) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void replicateClear(String timeline) {
+		// TODO Auto-generated method stub
 		
 	}
 }

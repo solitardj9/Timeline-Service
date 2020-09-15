@@ -1,45 +1,103 @@
 package com.solitardj9.timelineService.application.timelineSyncManager.service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
+import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 
 public interface TimelineSyncManager {
-	//
+	
+	/**
+	 * if success replicate added timeline.
+	 * @param timeline
+	 * @throws ExceptionTimelineConflictFailure
+	 */
 	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure;
 	
+	/**
+	 * if success replicate deleted timeline.
+	 * @param timeline
+	 * @throws ExceptionTimelineResourceNotFound
+	 */
 	public void deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound;
 	
-	public TreeMap<Long/*Timestamp*/, String> getTimeline(String timeline) throws ExceptionTimelineResourceNotFound;
+	/**
+	 * if success replicate putted value.
+	 * @param timeline
+	 * @param time
+	 * @param value
+	 * @throws ExceptionTimelineResourceNotFound
+	 */
+	public void put(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
-	public Map<String/*timeline*/, TreeMap<Long/*Timestamp*/, String>> getTimelines(List<String> timelines);
+	/**
+	 * if success replicate putted values.
+	 * @param timeline
+	 * @param values
+	 * @throws ExceptionTimelineResourceNotFound
+	 */
+	public void putAll(String timeline, TreeMap<Long/*Timestamp*/, String/*value*/> values) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
-	public TreeMap<Long/*Timestamp*/, String> getTimelineByTime(String timeline, Long time) throws ExceptionTimelineResourceNotFound;
+	/**
+	 * if success replicate updated value.
+	 * @param timeline
+	 * @param time
+	 * @param value
+	 * @throws ExceptionTimelineResourceNotFound
+	 * @throws ExceptionTimelineInternalFailure
+	 */
+	public void update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
-	public Map<String/*timeline*/, TreeMap<Long/*Timestamp*/, String>> getTimelinesByTime(List<String> timelines, Long time);
+	/**
+	 * if success replicate updated values.
+	 * @param timeline
+	 * @param values
+	 * @throws ExceptionTimelineResourceNotFound
+	 * @throws ExceptionTimelineInternalFailure
+	 */
+	public void updateAll(String timeline, TreeMap<Long/*Timestamp*/, String/*value*/> values) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
-	public TreeMap<Long/*Timestamp*/, String> getTimelineByPreiod(String timeline, Long fromTime/*inclusive*/, Long toTime/*exclusive*/) throws ExceptionTimelineResourceNotFound;
+	/**
+	 * if success replicate removed timestamp.
+	 * @param timeline
+	 * @param time
+	 * @throws ExceptionTimelineResourceNotFound
+	 * @throws ExceptionTimelineInternalFailure
+	 */
+	public void remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
-	public Map<String/*timeline*/, TreeMap<Long/*Timestamp*/, String>> getTimelinesByPreiod(List<String> timelines, Long fromTime/*inclusive*/, Long toTime/*exclusive*/);
+	/**
+	 * if success replicate removed timestamps.
+	 * @param timeline
+	 * @param times
+	 * @throws ExceptionTimelineResourceNotFound
+	 * @throws ExceptionTimelineInternalFailure
+	 */
+	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
-	public void put(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound;
-	
-	public void putAll(String timeline, TreeMap<Long/*Timestamp*/, String/*value*/> values) throws ExceptionTimelineResourceNotFound;
-	
-	public void update(String timeline, Long time, String value) throws ExceptionTimelineResourceNotFound;
-	
-	public void updateAll(String timeline, TreeMap<Long/*Timestamp*/, String/*value*/> values) throws ExceptionTimelineResourceNotFound;
-	
-	public void remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound;
-	
-	public void removeByTimes(String timeline, List<Long> times) throws ExceptionTimelineResourceNotFound;
-	
+	/**
+	 * if success replicate removed period.
+	 * @param timeline
+	 * @param fromTime
+	 * @param toTime
+	 * @throws ExceptionTimelineResourceNotFound
+	 */
 	public void removeByPeriod(String timeline, Long fromTime/*inclusive*/, Long toTime/*exclusive*/) throws ExceptionTimelineResourceNotFound;
 	
+	/**
+	 * if success replicate removed timestamp.
+	 * @param timeline
+	 * @param toTime
+	 * @throws ExceptionTimelineResourceNotFound
+	 */
 	public void removeByBefore(String timeline, Long toTime/*exclusive*/) throws ExceptionTimelineResourceNotFound;
 	
-	public void clear(String timeline) throws ExceptionTimelineResourceNotFound;
+	/**
+	 * if success replicate cleared timeline.
+	 * @param timeline
+	 * @throws ExceptionTimelineResourceNotFound
+	 */
+	public void clear(String timeline) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 }

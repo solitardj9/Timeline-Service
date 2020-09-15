@@ -91,7 +91,6 @@ public interface TimelineManager {
 	public Remove remove(String timeline, Long time) throws ExceptionTimelineResourceNotFound, ExceptionTimelineInternalFailure;
 	
 	/**
-	 * 
 	 * @param timeline
 	 * @param times
 	 * @return RemoveByTime if success. used for synchronization.
