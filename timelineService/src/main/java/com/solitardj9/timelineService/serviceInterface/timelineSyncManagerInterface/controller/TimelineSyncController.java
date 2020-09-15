@@ -55,7 +55,6 @@ public class TimelineSyncController {
 			logger.error("[TimelineSyncController].addTimeline : error = " + e.getStackTrace());
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.CONFLICT.value(), timeline), HttpStatus.CONFLICT);
 		}
-		
 		return new ResponseEntity<>(new ResponseTimeline(HttpStatus.OK.value(), timeline), HttpStatus.OK);
 	}
 	
