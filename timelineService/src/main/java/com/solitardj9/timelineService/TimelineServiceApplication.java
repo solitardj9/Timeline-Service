@@ -10,5 +10,6 @@ public class TimelineServiceApplication {
 	public static void main(String[] args) {
 		//
 		ConfigurableApplicationContext context = SpringApplication.run(TimelineServiceApplication.class, args);
+		
 	}
 }

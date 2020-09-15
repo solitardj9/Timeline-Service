@@ -5,6 +5,8 @@ import java.io.Serializable;
 public class PublishMessage implements Serializable {
 
 	private static final long serialVersionUID = -8250443786774290835L;
+	
+	private String traceId;
 
 	private String type;
 	
@@ -14,10 +16,18 @@ public class PublishMessage implements Serializable {
 		
 	}
 
-	public PublishMessage(String type, String message) {
-		super();
+	public PublishMessage(String traceId, String type, String message) {
+		this.traceId = traceId;
 		this.type = type;
 		this.message = message;
+	}
+
+	public String getTraceId() {
+		return traceId;
+	}
+
+	public void setTraceId(String traceId) {
+		this.traceId = traceId;
 	}
 
 	public String getType() {
@@ -38,6 +48,6 @@ public class PublishMessage implements Serializable {
 
 	@Override
 	public String toString() {
-		return "PublishMessage [type=" + type + ", message=" + message + "]";
+		return "PublishMessage [traceId=" + traceId + ", type=" + type + ", message=" + message + "]";
 	}
 }

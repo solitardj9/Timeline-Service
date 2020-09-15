@@ -2,7 +2,6 @@ package com.solitardj9.timelineService.application.messageFlowManager.service.im
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +13,9 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.solitardj9.timelineService.application.messageFlowManager.model.ConsumeAck;
 import com.solitardj9.timelineService.application.messageFlowManager.model.ConsumeMessage;
+import com.solitardj9.timelineService.application.messageFlowManager.model.PublishAck;
 import com.solitardj9.timelineService.application.messageFlowManager.model.PublishMessage;
 import com.solitardj9.timelineService.application.messageFlowManager.service.MessageFlowManager;
 import com.solitardj9.timelineService.systemInterface.networkInterface.model.GenericRecvAck;
@@ -48,12 +49,14 @@ public class MessageFlowManagerImpl implements MessageFlowManager {
 		
 		try {
 			ConsumeMessage consumeMessage = om.readValue(message, ConsumeMessage.class);
+			consumeMessage.setClientId(clientId);
+			consumeMessage.setConsumerTag(consumerTag);
 			
 			applicationEventPublisher.publishEvent(consumeMessage);
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.error("[MessageFlowManager].onGenericRecvMsgEvent : " + e.toString());
-		} finally {
+			logger.error("[MessageFlowManager].onGenericRecvMsgEvent : " + e.getStackTrace());
+			
 			Map<String, Object> data = new HashMap<>();
 			data.put(GenericRecvAckParam.CLIENT_ID.getParam(), clientId);
 			data.put(GenericRecvAckParam.CONSUMER_TAG.getParam(), consumerTag);
@@ -64,15 +67,36 @@ public class MessageFlowManagerImpl implements MessageFlowManager {
 	
 	@EventListener
 	@Async
+	public void onConsumeAck(ConsumeAck consumeAck) {
+		//
+		String clientId = consumeAck.getClientId();
+		String consumerTag = consumeAck.getConsumerTag();
+		try {
+			logger.info("[MessageFlowManager].onConsumeAck : clientId = " + clientId + " / consumerTag = " + consumerTag);
+			
+			Map<String, Object> data = new HashMap<>();
+			data.put(GenericRecvAckParam.CLIENT_ID.getParam(), clientId);
+			data.put(GenericRecvAckParam.CONSUMER_TAG.getParam(), consumerTag);
+			
+			applicationEventPublisher.publishEvent(new GenericRecvAck(data));
+		} catch (Exception e) {
+			//e.printStackTrace();
+			logger.error("[MessageFlowManager].onConsumeAck : " + e.getStackTrace());
+		}
+	}
+	
+	@EventListener
+	@Async
 	public void onPublishMessage(PublishMessage publishMessage) {
 		//
+		String ackId = null;
 		String message = null;
 		try {
+			ackId = publishMessage.getTraceId();
 			message = om.writeValueAsString(publishMessage);
 			
 			Map<String, Object> data = new HashMap<>();
 			
-			String ackId = UUID.randomUUID().toString();
 			data.put(GenericSendMsgParam.ACK_ID.getParam(), ackId);
 			data.put(GenericSendMsgParam.MESSAGE.getParam(), message);
 			
@@ -81,7 +105,7 @@ public class MessageFlowManagerImpl implements MessageFlowManager {
 			applicationEventPublisher.publishEvent(new GenericSendMsg(data));
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.error("[MessageFlowManager].onPublishMessage : " + e.toString());
+			logger.error("[MessageFlowManager].onPublishMessage : " + e.getStackTrace());
 		}
 	}
 	
@@ -90,10 +114,12 @@ public class MessageFlowManagerImpl implements MessageFlowManager {
 	public void onGenericSendAckEvent(GenericSendAck genericSendAck) {
 		//
 		try {
-			logger.info("[MessageFlowManager].onGenericSendAckEvent : ack ID = " + genericSendAck.getDataValue(GenericSendAckParam.ACK_ID.getParam()));
+			String ackId = (String)genericSendAck.getDataValue(GenericSendAckParam.ACK_ID.getParam());
+			logger.info("[MessageFlowManager].onGenericSendAckEvent : ack ID = " + ackId);
+			applicationEventPublisher.publishEvent(new PublishAck(ackId));
 		} catch (Exception e) {
 			//e.printStackTrace();
-			logger.error("[MessageFlowManager].onGenericSendAckEvent : " + e.toString());
+			logger.error("[MessageFlowManager].onGenericSendAckEvent : " + e.getStackTrace());
 		}
 	}
 }

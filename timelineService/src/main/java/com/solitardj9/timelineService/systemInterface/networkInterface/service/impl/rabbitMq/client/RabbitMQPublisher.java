@@ -21,7 +21,8 @@ public class RabbitMQPublisher {
 	
     private Channel channel;
     
-    private RabbitMQClient rabbitMQClient;
+    @SuppressWarnings("unused")
+	private RabbitMQClient rabbitMQClient;
     
     private ToPublish toPublish;
     
@@ -44,7 +45,7 @@ public class RabbitMQPublisher {
 			this.channel.confirmSelect();
 		} catch (IOException e) {
 			//e.printStackTrace();
-			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.toString());
+			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.getStackTrace());
 		}
     	
     	try {
@@ -60,7 +61,7 @@ public class RabbitMQPublisher {
 	    				try {
 							Thread.sleep(500);
 						} catch (InterruptedException ie) {
-							logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + ie.toString());
+							logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + ie.getStackTrace());
 						}
 	    			}
 	    			break;
@@ -82,7 +83,7 @@ public class RabbitMQPublisher {
 			return this.publisherTag;
 		} catch (Exception e) {
 			//e.printStackTrace();
-			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.toString());
+			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.getStackTrace());
 			return null;
 		}
     }
@@ -109,7 +110,7 @@ public class RabbitMQPublisher {
         	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
 		    
         	//e.printStackTrace();
-        	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+        	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
         	return false;
 		
 		} catch (Exception e) {
@@ -118,7 +119,7 @@ public class RabbitMQPublisher {
 	    	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
 	    	
 		    //e.printStackTrace();
-	    	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+	    	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
 	    	return false;
 		}
     }
@@ -139,7 +140,7 @@ public class RabbitMQPublisher {
     	} catch (com.rabbitmq.client.AlreadyClosedException e) {
     		//
     		e.printStackTrace();
-        	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+        	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
     		
     		Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
         	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
@@ -149,7 +150,7 @@ public class RabbitMQPublisher {
 		} catch (Exception e) {
 			//
 			e.printStackTrace();
-	    	logger.error("[RabbitMQPublisher].publish : error = " + e.toString());
+	    	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
 			
 			Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
 	    	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();

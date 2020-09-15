@@ -91,7 +91,7 @@ public class TimelineManagerImpl implements TimelineManager {
 				retMap.put(timeline, getTimeline(timeline));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
-				logger.error("[TimelineManager].getTimelines : error = " + e.toString());
+				logger.error("[TimelineManager].getTimelines : error = " + e.getStackTrace());
 			}
 		}
 		
@@ -120,7 +120,7 @@ public class TimelineManagerImpl implements TimelineManager {
 				retMap.put(timeline, getTimelineByTime(timeline, time));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
-				logger.error("[TimelineManager].getTimelinesByTime : error = " + e.toString());
+				logger.error("[TimelineManager].getTimelinesByTime : error = " + e.getStackTrace());
 			}
 		}
 		
@@ -149,7 +149,7 @@ public class TimelineManagerImpl implements TimelineManager {
 				retMap.put(timeline, getTimelineByPreiod(timeline, fromTime, toTime));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
-				logger.error("[TimelineManager].getTimelinesByPreiod : error = " + e.toString());
+				logger.error("[TimelineManager].getTimelinesByPreiod : error = " + e.getStackTrace());
 			}
 		}
 		
@@ -167,7 +167,7 @@ public class TimelineManagerImpl implements TimelineManager {
 			timelines.get(timeline).put(time, value);
 			return new PutValue(timeline, time, value);
 		} catch(Exception e) {
-			logger.error("[TimelineManager].put : error = " + e.toString());
+			logger.error("[TimelineManager].put : error = " + e.getStackTrace());
 			throw new ExceptionTimelineInternalFailure();
 		}
 	}
@@ -183,7 +183,7 @@ public class TimelineManagerImpl implements TimelineManager {
 			timelines.get(timeline).putAll(values);
 			return new PutValues(timeline, values);
 		} catch(Exception e) {
-			logger.error("[TimelineManager].putAll : error = " + e.toString());
+			logger.error("[TimelineManager].putAll : error = " + e.getStackTrace());
 			throw new ExceptionTimelineInternalFailure();
 		}
 	}
@@ -202,7 +202,7 @@ public class TimelineManagerImpl implements TimelineManager {
 				timelines.get(timeline).put(time, value);
 				return new PutValue(timeline, time, value);
 			} catch(Exception e) {
-				logger.error("[TimelineManager].update : error = " + e.toString());
+				logger.error("[TimelineManager].update : error = " + e.getStackTrace());
 				throw new ExceptionTimelineInternalFailure();
 			}
 		}
@@ -213,7 +213,7 @@ public class TimelineManagerImpl implements TimelineManager {
 				timelines.get(timeline).put(time, mergedJsonString);
 				return new PutValue(timeline, time, mergedJsonString);
 			} catch(Exception e) {
-				logger.error("[TimelineManager].update : error = " + e.toString());
+				logger.error("[TimelineManager].update : error = " + e.getStackTrace());
 				throw new ExceptionTimelineInternalFailure();
 			}
 		}
@@ -236,7 +236,7 @@ public class TimelineManagerImpl implements TimelineManager {
 						timelines.get(timeline).put(iter.getKey(), iter.getValue());
 						retValues.put(iter.getKey(), iter.getValue());
 					} catch(Exception e) {
-						logger.error("[TimelineManager].updateAll : error = " + e.toString());
+						logger.error("[TimelineManager].updateAll : error = " + e.getStackTrace());
 					}
 				}
 				else {
@@ -246,12 +246,12 @@ public class TimelineManagerImpl implements TimelineManager {
 						timelines.get(timeline).put(iter.getKey(), mergedJsonString);
 						retValues.put(iter.getKey(), mergedJsonString);
 					} catch(Exception e) {
-						logger.error("[TimelineManager].updateAll : error = " + e.toString());
+						logger.error("[TimelineManager].updateAll : error = " + e.getStackTrace());
 					}
 				}
 			} catch (Exception e) {
 				//e.printStackTrace();
-				logger.error("[TimelineManager].updateAll : error = " + e.toString());
+				logger.error("[TimelineManager].updateAll : error = " + e.getStackTrace());
 			}
 		}
 		
@@ -291,7 +291,7 @@ public class TimelineManagerImpl implements TimelineManager {
 				timelines.get(timeline).remove(time);
 				retValues.add(time);
 			} catch(Exception e) {
-				logger.error("[TimelineManager].removeByTimes : error = " + e.toString());
+				logger.error("[TimelineManager].removeByTimes : error = " + e.getStackTrace());
 			}
 		}
 		

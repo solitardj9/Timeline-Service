@@ -213,7 +213,7 @@ public class InMemoryManagerImpl implements InMemoryManager {
 				//
 			}
 		} catch (Exception e) {
-			logger.error("[InMemoryManager].setupCluster : fail to cluster InMemoryManager = " + e.toString());
+			logger.error("[InMemoryManager].setupCluster : fail to cluster InMemoryManager = " + e.getStackTrace());
 			throw new ExceptionHazelcastNetworkFailure();
 		}
 	}
@@ -253,14 +253,14 @@ public class InMemoryManagerImpl implements InMemoryManager {
 			try {
 				getMap(mapName).addEntryListener(eventListener, true);
 			} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-				logger.error("[InMemoryManager].addMap : error = " + e.toString());
+				logger.error("[InMemoryManager].addMap : error = " + e.getStackTrace());
 			}
 		}
 		
 		try {
 			return getMap(mapName);
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[InMemoryManager].addMap : error = " + e.toString());
+			logger.error("[InMemoryManager].addMap : error = " + e.getStackTrace());
 			throw new ExceptionHazelcastDataStructureNotFoundFailure();
 		}
 	}

@@ -58,7 +58,7 @@ public class JsonUtil {
 			getJsonPathKeyObject(null, om.readValue(jsonString, Map.class), jsonPathKeyObjects);
 		} catch (IOException e) {
 			//e.printStackTrace();
-			logger.error("[JsonUtil].extractJsonKeyPathObjectFormJsonString : error = " + e.toString());
+			logger.error("[JsonUtil].extractJsonKeyPathObjectFormJsonString : error = " + e.getStackTrace());
 		}
 	}
 	
@@ -142,7 +142,7 @@ public class JsonUtil {
 			dc = dc.set(jsonPath, value);
 		}
 		catch (Exception e) {
-			logger.error("[JsonUtil].updateJsonDocument " + e.toString());
+			logger.error("[JsonUtil].updateJsonDocument " + e.getStackTrace());
 		}
 	}
 	
@@ -162,7 +162,7 @@ public class JsonUtil {
 			}
 		}
 		catch (Exception e) {
-			logger.error("[JsonUtil].insertJsonDocument " + e.toString());
+			logger.error("[JsonUtil].insertJsonDocument " + e.getStackTrace());
 		}
 	}
 }

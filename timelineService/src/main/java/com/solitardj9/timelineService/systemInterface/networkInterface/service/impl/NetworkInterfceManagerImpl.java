@@ -93,7 +93,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 			try {
 				rabbitMQAdminClient.connect();
 			} catch (ExceptionRabbitMQAdminClientConnectionFailure e) {
-				logger.error("[NetworkInterfceManager].init : error = " + e.toString());
+				logger.error("[NetworkInterfceManager].init : error = " + e.getStackTrace());
 			}
 			rabbitMQAdminClients.add(rabbitMQAdminClient);
 		}
@@ -106,7 +106,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 			try {
 				rabbitMQAdminClient.disconnect();
 			} catch (ExceptionRabbitMQAdminClientDisconnectionFailure e) {
-				logger.error("[NetworkInterfceManager].disconnectAdminClients : error = " + e.toString());
+				logger.error("[NetworkInterfceManager].disconnectAdminClients : error = " + e.getStackTrace());
 			}
 		}
 		rabbitMQAdminClients.clear();
@@ -123,7 +123,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		try {
 			rabbitMQAdminClients.get(getRandomIndex(rabbitMQAdminClients.size())).createExchange(exchange, type, durable, autoDelete, arguments);
 		} catch (ExceptionRabbitMQAdminClientExchangeDeclareFailure e) {
-			logger.error("[NetworkInterfceManager].createExchange : error = " + e.toString());
+			logger.error("[NetworkInterfceManager].createExchange : error = " + e.getStackTrace());
 		}
 	}
 
@@ -133,7 +133,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		try {
 			rabbitMQAdminClients.get(getRandomIndex(rabbitMQAdminClients.size())).deleteExchange(exchange);
 		} catch (ExceptionRabbitMQAdminClientExchangeDeleteFailure e) {
-			logger.error("[NetworkInterfceManager].createExchange : error = " + e.toString());
+			logger.error("[NetworkInterfceManager].createExchange : error = " + e.getStackTrace());
 		}
 	}
 
@@ -143,7 +143,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		try {
 			rabbitMQAdminClients.get(getRandomIndex(rabbitMQAdminClients.size())).createQueue(queue, durable, exclusive, autoDelete, arguments);
 		} catch (ExceptionRabbitMQAdminClientQueueDeclareFailure e) {
-			logger.error("[NetworkInterfceManager].createQueue : error = " + e.toString());
+			logger.error("[NetworkInterfceManager].createQueue : error = " + e.getStackTrace());
 		}
 	}
 
@@ -153,7 +153,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		try {
 			rabbitMQAdminClients.get(getRandomIndex(rabbitMQAdminClients.size())).deleteQueue(queue);
 		} catch (ExceptionRabbitMQAdminClientQueueDeleteFailure e) {
-			logger.error("[NetworkInterfceManager].deleteQueue : error = " + e.toString());
+			logger.error("[NetworkInterfceManager].deleteQueue : error = " + e.getStackTrace());
 		}
 	}
 
@@ -163,7 +163,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		try {
 			rabbitMQAdminClients.get(getRandomIndex(rabbitMQAdminClients.size())).bindQueueWithExchange(queue, exchange, routingKey);
 		} catch (ExceptionRabbitMQAdminClientExchangeBindFailure e) {
-			logger.error("[NetworkInterfceManager].bindQueueWithExchange : error = " + e.toString());
+			logger.error("[NetworkInterfceManager].bindQueueWithExchange : error = " + e.getStackTrace());
 		}
 	}
 
@@ -173,7 +173,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 		try {
 			rabbitMQAdminClients.get(getRandomIndex(rabbitMQAdminClients.size())).unbindQueueFromExchange(queue, exchange, routingKey);
 		} catch (ExceptionRabbitMQAdminClientExchangeUnbindFailure e) {
-			logger.error("[NetworkInterfceManager].bindQueueWithExchange : error = " + e.toString());
+			logger.error("[NetworkInterfceManager].bindQueueWithExchange : error = " + e.getStackTrace());
 		}
 	}
 	
@@ -187,7 +187,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 				rabbitMQClient.connect();
 			} catch (ExceptionRabbitMQClientConnectionFailure e) {
 				//e.printStackTrace();
-				logger.error("[NetworkInterfceManager].createClients : error = " + e.toString());
+				logger.error("[NetworkInterfceManager].createClients : error = " + e.getStackTrace());
 			}
 			rabbitMQClients.put(rabbitMQClient.getClientId(), rabbitMQClient);
 		}
@@ -201,7 +201,7 @@ public class NetworkInterfceManagerImpl implements NetworkInterfceManager, Rabbi
 				iter.getValue().disconnect();
 			} catch (ExceptionRabbitMQAdminClientDisconnectionFailure e) {
 				//e.printStackTrace();
-				logger.error("[NetworkInterfceManager].deleteClients : error = " + e.toString());
+				logger.error("[NetworkInterfceManager].deleteClients : error = " + e.getStackTrace());
 			}
 		}
 	}

@@ -1,5 +1,7 @@
 package com.solitardj9.timelineService.application.testManager.service.impl;
 
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -17,7 +19,7 @@ public class TestManagerImpl implements TestManager {
 	@Override
 	public void publishMessage(String message) {
 		//
-		PublishMessage publishMessage = new PublishMessage("test", message);
+		PublishMessage publishMessage = new PublishMessage(UUID.randomUUID().toString(),"test", message);
 		applicationEventPublisher.publishEvent(publishMessage);
 	}
 }

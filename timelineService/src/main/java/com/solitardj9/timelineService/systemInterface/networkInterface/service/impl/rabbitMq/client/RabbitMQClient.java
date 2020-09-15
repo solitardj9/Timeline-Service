@@ -170,7 +170,7 @@ public class RabbitMQClient implements RecoveryListener {
 
 		} catch (IOException | TimeoutException e) {
 			e.printStackTrace();
-			logger.error("[RabbitMQClient].connect : clientId = " + clientId + " / error = " + e.toString());
+			logger.error("[RabbitMQClient].connect : clientId = " + clientId + " / error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQClientConnectionFailure();
 		}
 	}
@@ -193,7 +193,7 @@ public class RabbitMQClient implements RecoveryListener {
 			}
 		} catch (IOException e) {
 			//e.printStackTrace();
-			logger.info("[RabbitMQClient].makeTopology : clientId = " + clientId + " / error = " + e.toString());
+			logger.info("[RabbitMQClient].makeTopology : clientId = " + clientId + " / error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQClientConnectionFailure();
 		}
 	}
@@ -218,7 +218,7 @@ public class RabbitMQClient implements RecoveryListener {
 			sendRabbitMQPublishers.clear();
 		} catch (IOException  e) {
 			//e.printStackTrace();
-			logger.info("[RabbitMQClient].recoveryTopology : clientId = " + clientId + " / error = " + e.toString());
+			logger.info("[RabbitMQClient].recoveryTopology : clientId = " + clientId + " / error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQClientConnectionFailure();
 		}
 		
@@ -246,7 +246,7 @@ public class RabbitMQClient implements RecoveryListener {
 				connection.close();
 			}
 		} catch (IOException e) {
-			logger.error("[RabbitMQAdminClient].disconnect : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].disconnect : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientDisconnectionFailure();
 		}
 	}
@@ -282,7 +282,7 @@ public class RabbitMQClient implements RecoveryListener {
 			result = sendRabbitMQPublishers.get(publisherTag).publish(routingKey, message);
 		} catch (IOException | TimeoutException e) {
 			//e.printStackTrace();
-			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.toString());
+			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.getStackTrace());
 			return result;
 		}
 		return result;
@@ -299,7 +299,7 @@ public class RabbitMQClient implements RecoveryListener {
 			result = sendRabbitMQPublishers.get(publisherTag).publish(message);
 		} catch (IOException | TimeoutException e) {
 			//e.printStackTrace();
-			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.toString());
+			logger.info("[RabbitMQClient].onMessage : clientId = " + clientId + " / publisherTag = " + publisherTag + " / error = " + e.getStackTrace());
 			return result;
 		}
 		
@@ -317,7 +317,7 @@ public class RabbitMQClient implements RecoveryListener {
 			recoveryTopology();
 		} catch (ExceptionRabbitMQClientConnectionFailure | InterruptedException e) {
 			//e.printStackTrace();
-			logger.error("[RabbitMQClient].handleRecovery : error = " + e.toString());
+			logger.error("[RabbitMQClient].handleRecovery : error = " + e.getStackTrace());
 		}
 	}
 

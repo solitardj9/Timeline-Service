@@ -55,7 +55,7 @@ public class RabbitMQComsumer implements DeliverCallback, CancelCallback, Consum
 			return this.consumerTag;
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
-			logger.error("[RabbitMQComsumer].createRabbitMQComsumer : error = " + e.toString());
+			logger.error("[RabbitMQComsumer].createRabbitMQComsumer : error = " + e.getStackTrace());
 			return null;
 		}
     }
@@ -78,7 +78,7 @@ public class RabbitMQComsumer implements DeliverCallback, CancelCallback, Consum
 			channel.basicAck(message.getEnvelope().getDeliveryTag(), false);
 		} catch (IOException e) {
 			//e.printStackTrace();
-			logger.error("[RabbitMQComsumer].ack : error = " + e.toString());
+			logger.error("[RabbitMQComsumer].ack : error = " + e.getStackTrace());
 		}
     }
 

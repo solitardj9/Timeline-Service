@@ -64,7 +64,7 @@ public class ServiceController {
 			String responseBody = om.writeValueAsString(resultMap);
 			return new ResponseEntity<>(responseBody, HttpStatus.OK);
 		} catch (JsonProcessingException e) {
-			logger.info("[ServiceController].getServiceInstances : error = " + e.toString());
+			logger.info("[ServiceController].getServiceInstances : error = " + e.getStackTrace());
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
     }

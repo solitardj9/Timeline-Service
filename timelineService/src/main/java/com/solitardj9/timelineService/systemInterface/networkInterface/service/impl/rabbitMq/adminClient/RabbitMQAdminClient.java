@@ -102,7 +102,7 @@ public class RabbitMQAdminClient {
 			connection = connectionFactory.newConnection();
 			channel = connection.createChannel();
 		} catch (IOException | TimeoutException e) {
-			logger.error("[RabbitMQAdminClient].connect : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].connect : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientConnectionFailure();
 		}
 	}
@@ -117,7 +117,7 @@ public class RabbitMQAdminClient {
 				connection.close();
 			}
 		} catch (IOException | TimeoutException e) {
-			logger.error("[RabbitMQAdminClient].disconnect : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].disconnect : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientDisconnectionFailure();
 		}
 	}
@@ -127,7 +127,7 @@ public class RabbitMQAdminClient {
 		try {
 			return channel.exchangeDeclare(exchange, type, durable, autoDelete, arguments);
 		} catch (IOException e) {
-			logger.error("[RabbitMQAdminClient].createExchange : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].createExchange : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientExchangeDeclareFailure();
 		}
 	}
@@ -137,7 +137,7 @@ public class RabbitMQAdminClient {
 		try {
 			return channel.exchangeDelete(exchange);
 		} catch (IOException | AlreadyClosedException e) {
-			logger.error("[RabbitMQAdminClient].deleteExchange : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].deleteExchange : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientExchangeDeleteFailure();
 		}
 	}
@@ -147,7 +147,7 @@ public class RabbitMQAdminClient {
 		try {
 			return channel.queueDeclare(queue, durable, exclusive, autoDelete, arguments);
 		} catch (IOException | AlreadyClosedException e) {
-			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientQueueDeclareFailure();
 		}
 	}
@@ -157,7 +157,7 @@ public class RabbitMQAdminClient {
 		try {
 			return channel.queueDelete(queue);
 		} catch (IOException | AlreadyClosedException e) {
-			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientQueueDeleteFailure();
 		}
 	}
@@ -167,7 +167,7 @@ public class RabbitMQAdminClient {
 		try {
 			return channel.queueBind(queue, exchange, routingKey);
 		} catch (IOException | AlreadyClosedException e) {
-			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientExchangeBindFailure();
 		}
 	}
@@ -177,7 +177,7 @@ public class RabbitMQAdminClient {
 		try {
 			return channel.queueUnbind(queue, exchange, routingKey);
 		} catch (IOException | AlreadyClosedException e) {
-			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.toString());
+			logger.error("[RabbitMQAdminClient].createQueue : error = " + e.getStackTrace());
 			throw new ExceptionRabbitMQAdminClientExchangeUnbindFailure();
 		}
 	}

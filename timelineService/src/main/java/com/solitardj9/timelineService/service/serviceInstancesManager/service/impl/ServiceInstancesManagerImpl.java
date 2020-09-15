@@ -56,7 +56,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 		try {
 			inMemoryManager.addMap(inMemoryInstance);
 		} catch (ExceptionHazelcastDataStructureCreationFailure | ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].init : error = " + e.toString());
+			logger.error("[ServiceInstancesManager].init : error = " + e.getStackTrace());
 		}
 		
 		try {
@@ -72,13 +72,13 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 					InetAddress addr = addresses.nextElement();
 					if(Inet4Address.class == addr.getClass()) {
 						ip = addr.getHostAddress();
-						logger.error("[ServiceInstancesManager].init : ip = " + ip);
+						logger.info("[ServiceInstancesManager].init : ip = " + ip);
 					}
 				}
 			}
 		} catch (SocketException e) {
 			//e.printStackTrace();
-			logger.error("[ServiceInstancesManager].init : error = " + e.toString());
+			logger.error("[ServiceInstancesManager].init : error = " + e.getStackTrace());
 		}
 	}
 	
@@ -96,7 +96,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 				inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).put(serviceName, serviceInstance);
 			}
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].registerService : error = " + e.toString());
+			logger.error("[ServiceInstancesManager].registerService : error = " + e.getStackTrace());
 		}
 	}
 
@@ -106,7 +106,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 		try {
 			inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).remove(serviceName);
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.toString());
+			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.getStackTrace());
 		}
 	}
 
@@ -151,7 +151,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 			
 			return retMap;
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.toString());
+			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.getStackTrace());
 			return retMap;
 		}
 	}
