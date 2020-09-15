@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -173,6 +174,90 @@ public class TimelineSyncController {
 		} catch (ExceptionTimelineInternalFailure e) {
 			//e.printStackTrace();
 			logger.error("[TimelineSyncController].putTimelineValues : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		return new ResponseEntity<>(new ResponseTimeline(HttpStatus.OK.value(), timeline), HttpStatus.OK);
+	}
+	
+	/**
+	 * @param timeline
+	 * @param requestBody
+	 * 		{
+	 * 			"time" : {Long},
+	 * 			"value" : "{String}"
+	 * 		}
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	@PatchMapping(value="/timelines/{timeline}/timeline/value")
+	public ResponseEntity patchTimelineValue(@PathVariable("timeline") String timeline,
+												  @RequestBody(required=true) String requestBody) {
+		//
+		logger.info("[TimelineSyncController].patchTimelineValue is called.");
+		
+		RequestPut request = null;
+		try {
+			request = om.readValue(requestBody, RequestPut.class);
+		} catch (JsonProcessingException e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
+		}
+		
+		try {
+			timelineSyncManager.update(timeline, request.getTime(), request.getValue());
+		} catch (ExceptionTimelineResourceNotFound e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+		} catch (ExceptionTimelineInternalFailure e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		return new ResponseEntity<>(new ResponseTimeline(HttpStatus.OK.value(), timeline), HttpStatus.OK);
+	}
+	
+	/**
+	 * @param timeline
+	 * @param requestBody
+	 * 		{
+	 * 			"values" : {
+	 * 				"{time}":"{value}",
+	 * 				"{time}":"{value}",
+	 * 				...
+	 * 				"{time}":"{value}"
+	 * 			}
+	 * 		}
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	@PatchMapping(value="/timelines/{timeline}/timeline/values")
+	public ResponseEntity patchTimelineValues(@PathVariable("timeline") String timeline,
+													@RequestBody(required=true) String requestBody) {
+		//
+		logger.info("[TimelineSyncController].patchTimelineValues is called.");
+		
+		RequestPutAll request = null;
+		try {
+			request = om.readValue(requestBody, RequestPutAll.class);
+		} catch (JsonProcessingException e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
+		}
+		
+		try {
+			timelineSyncManager.updateAll(timeline, request.getValues());
+		} catch (ExceptionTimelineResourceNotFound e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+		} catch (ExceptionTimelineInternalFailure e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
