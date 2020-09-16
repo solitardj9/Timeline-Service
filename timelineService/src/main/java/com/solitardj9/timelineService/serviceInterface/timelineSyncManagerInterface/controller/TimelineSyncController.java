@@ -1,5 +1,7 @@
 package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.controller;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -23,8 +25,15 @@ import com.solitardj9.timelineService.application.timelineManager.service.except
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineSyncManager;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestClear;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestDeleteDefault;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestPut;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestPutAll;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestRemove;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestRemoveByBefore;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestRemoveByPeriod;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.RequestRemoveByTimes;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.ResponseKeySetOfTimelines;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.ResponseTimeline;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.ResponseTimelineValues;
 
@@ -78,22 +87,34 @@ public class TimelineSyncController {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	@GetMapping(value="/timelines/keySet")
+	public ResponseEntity getkeySetOfTimelines(@RequestBody(required=false) String requestBody) {
+		//
+		logger.info("[TimelineSyncController].getkeySetOfTimelines is called.");
+		
+		Set<String> retSet = new HashSet<>();
+		retSet = timelineManager.getkeySetOfTimelines();
+		
+		return new ResponseEntity<>(new ResponseKeySetOfTimelines(HttpStatus.OK.value(), retSet), HttpStatus.OK);
+	}
+	
+	@SuppressWarnings("rawtypes")
 	@GetMapping(value="/timelines/{timeline}")
 	public ResponseEntity getTimeline(@PathVariable("timeline") String timeline,
 										  @RequestBody(required=false) String requestBody) {
 		//
 		logger.info("[TimelineSyncController].getTimeline is called.");
 		
-		TreeMap<Long, String> retmap = null;
+		TreeMap<Long, String> retMap = null;
 		try {
-			retmap = timelineManager.getTimeline(timeline);
+			retMap = timelineManager.getTimeline(timeline);
 		} catch (ExceptionTimelineResourceNotFound e) {
 			//e.printStackTrace();
 			logger.error("[TimelineSyncController].getTimeline : error = " + e.getStackTrace());
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		}
 		
-		return new ResponseEntity<>(new ResponseTimelineValues(HttpStatus.OK.value(), timeline, retmap), HttpStatus.OK);
+		return new ResponseEntity<>(new ResponseTimelineValues(HttpStatus.OK.value(), timeline, retMap), HttpStatus.OK);
 	}
 	
 	/**
@@ -259,6 +280,126 @@ public class TimelineSyncController {
 			//e.printStackTrace();
 			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		return new ResponseEntity<>(new ResponseTimeline(HttpStatus.OK.value(), timeline), HttpStatus.OK);
+	}
+	
+	/**
+	 * @param timeline
+	 * @param requestBody
+	 * 		- remove
+	 * 			{
+	 * 				"type" : "remove",
+	 * 				"timeline" : "{timeline}",
+	 * 				"time" : {Long} 
+	 * 			}
+	 * 		- remove by times
+	 * 			{
+	 * 				"type" : "removeByTimes",
+	 * 				"timeline" : "{timeline}",
+	 * 				"times" : [{Long}, ... , {Long}] 
+	 * 			}
+	 * 		- remove by period
+	 * 			{
+	 * 				"type" : "removeByPeriod",
+	 * 				"timeline" : "{timeline}",
+	 * 				"fromTime" : {Long}, 
+	 * 				"toTime" : {Long}
+	 * 			}
+	 * 		- remove by times
+	 * 			{
+	 * 				"type" : "removeByBefore",
+	 * 				"timeline" : "{timeline}",
+	 * 				"toTime" : {Long} 
+	 * 			}
+	 * 		- clear
+	 * 			{
+	 * 				"type" : "clear",
+	 * 				"timeline" : "{timeline}"
+	 * 			}
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	@DeleteMapping(value="/timelines/{timeline}/values")
+	public ResponseEntity deleteTimelineValues(@PathVariable("timeline") String timeline,
+											   @RequestBody(required=true) String requestBody) {
+		//
+		logger.info("[TimelineSyncController].deleteTimelineValues is called.");
+		
+		try {
+			RequestDeleteDefault requestDeleteDefualt = om.readValue(requestBody, RequestDeleteDefault.class);
+			
+			if (requestDeleteDefualt.getType().equals("remove")) {
+				//
+				try {
+					timelineSyncManager.remove(((RequestRemove)requestDeleteDefualt).getTimeline(), ((RequestRemove)requestDeleteDefualt).getTime());
+				} catch (ExceptionTimelineResourceNotFound e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+				} catch (ExceptionTimelineInternalFailure e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
+				}
+			}
+			else if (requestDeleteDefualt.getType().equals("removeByTimes")) {
+				//
+				try {
+					timelineSyncManager.removeByTimes(((RequestRemoveByTimes)requestDeleteDefualt).getTimeline(), ((RequestRemoveByTimes)requestDeleteDefualt).getTimes());
+				} catch (ExceptionTimelineResourceNotFound e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+				} catch (ExceptionTimelineInternalFailure e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
+				}
+			}
+			else if (requestDeleteDefualt.getType().equals("removeByPeriod")) {
+				//
+				try {
+					timelineSyncManager.removeByPeriod(((RequestRemoveByPeriod)requestDeleteDefualt).getTimeline(), ((RequestRemoveByPeriod)requestDeleteDefualt).getFromTime(), ((RequestRemoveByPeriod)requestDeleteDefualt).getToTime());
+				} catch (ExceptionTimelineResourceNotFound e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+				}
+			}
+			else if (requestDeleteDefualt.getType().equals("removeByBefore")) {
+				//
+				try {
+					timelineSyncManager.removeByBefore(((RequestRemoveByBefore)requestDeleteDefualt).getTimeline(), ((RequestRemoveByBefore)requestDeleteDefualt).getToTime());
+				} catch (ExceptionTimelineResourceNotFound e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+				}
+			}
+			else if (requestDeleteDefualt.getType().equals("clear")) {
+				//
+				try {
+					timelineSyncManager.clear(((RequestClear)requestDeleteDefualt).getTimeline());
+				} catch (ExceptionTimelineResourceNotFound e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
+				} catch (ExceptionTimelineInternalFailure e) {
+					//e.printStackTrace();
+					logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
+				}
+			}
+			else {
+				logger.error("[TimelineSyncController].deleteTimelineValues : error = not supported type to delete." );
+			}
+			
+		} catch (JsonProcessingException e) {
+			//e.printStackTrace();
+			logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 		}
 		
 		return new ResponseEntity<>(new ResponseTimeline(HttpStatus.OK.value(), timeline), HttpStatus.OK);

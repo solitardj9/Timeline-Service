@@ -2,7 +2,7 @@ package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInter
 
 import java.util.TreeMap;
 
-public class RequestPutAll extends RequestDefault {
+public class RequestPutAll extends RequestPutDefault {
 	//
 	private TreeMap<Long, String> values;
 	

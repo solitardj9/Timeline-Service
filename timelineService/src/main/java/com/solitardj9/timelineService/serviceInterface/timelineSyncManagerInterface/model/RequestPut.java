@@ -1,6 +1,6 @@
 package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model;
 
-public class RequestPut extends RequestDefault {
+public class RequestPut extends RequestPutDefault {
 	//
 	private Long time;
 	
