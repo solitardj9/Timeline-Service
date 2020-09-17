@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.IMap;
 import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceInMemoryMap;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceStatus;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesCallback;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
@@ -49,10 +50,12 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	
 	private ServiceInstancesCallback serviceInstancesCallback;
 	
+	private String serviceName;
+	
 	@PostConstruct
 	public void init() {
 		//
-		InMemoryInstance inMemoryInstance = new InMemoryInstance(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName(), backupCount, readBackupData, null, this);
+		InMemoryInstance inMemoryInstance = new InMemoryInstance(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap(), backupCount, readBackupData, null, this);
 		try {
 			inMemoryManager.addMap(inMemoryInstance);
 		} catch (ExceptionHazelcastDataStructureCreationFailure | ExceptionHazelcastDataStructureNotFoundFailure e) {
@@ -91,9 +94,10 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	public void registerService(String serviceName) {
 		//
 		try {
-			if (!inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).containsKey(serviceName)) {
-				ServiceInstance serviceInstance = new ServiceInstance(serviceName, ip, port, new Timestamp(System.currentTimeMillis()));
-				inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).put(serviceName, serviceInstance);
+			if (!inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).containsKey(serviceName)) {
+				ServiceInstance serviceInstance = new ServiceInstance(serviceName, ip, port, new Timestamp(System.currentTimeMillis()), ServiceInstanceStatus.ONLINE.getStatus());
+				inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).put(serviceName, serviceInstance);
+				this.serviceName = serviceName;
 			}
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
 			logger.error("[ServiceInstancesManager].registerService : error = " + e.getStackTrace());
@@ -104,7 +108,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	public void unregisterService(String serviceName) {
 		//
 		try {
-			inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName()).remove(serviceName);
+			inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).remove(serviceName);
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
 			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.getStackTrace());
 		}
@@ -143,7 +147,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 		//
 		Map<String, ServiceInstance> retMap = new HashMap<>();
 		try {
-			IMap<Object, Object> resultMap = inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMapName());
+			IMap<Object, Object> resultMap = inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap());
 
 			for (Entry<Object, Object> iter : resultMap.entrySet()) {
 				retMap.put((String)iter.getKey(), (ServiceInstance)iter.getValue());
@@ -151,8 +155,33 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 			
 			return retMap;
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].getServiceInstances : error = " + e.getStackTrace());
 			return retMap;
 		}
 	}
+	
+	@Override
+	public Map<String, ServiceInstance> getOnlineServiceInstancesWithoutMe() {
+		//
+		Map<String, ServiceInstance> retMap = new HashMap<>();
+		try {
+			IMap<Object, Object> resultMap = inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap());
+
+			for (Entry<Object, Object> iter : resultMap.entrySet()) {
+				if (!iter.getKey().equals(this.serviceName)) {
+					if (((ServiceInstance)iter.getValue()).getStatus().equals(ServiceInstanceStatus.ONLINE.getStatus())) {
+						retMap.put((String)iter.getKey(), (ServiceInstance)iter.getValue());
+					}
+				}
+			}
+			
+			return retMap;
+		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
+			logger.error("[ServiceInstancesManager].getServiceInstancesWithoutMe : error = " + e.getStackTrace());
+			return retMap;
+		}
+	}
+	
+	// TODO : add batch to check health interface of other nodes in cluster, 
+	// for example call rest api  and miss 3 times then update cluster staus offline. 
 }

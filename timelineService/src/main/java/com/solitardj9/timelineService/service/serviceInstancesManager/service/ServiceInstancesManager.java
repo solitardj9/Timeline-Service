@@ -13,4 +13,10 @@ public interface ServiceInstancesManager {
 	public void unregisterService(String serviceName);
 	
 	public Map<String, ServiceInstance> getServiceInstances();
+	
+	/**
+	 * get other nodes in cluster which is online status  
+	 * @return
+	 */
+	public Map<String, ServiceInstance> getOnlineServiceInstancesWithoutMe();
 }

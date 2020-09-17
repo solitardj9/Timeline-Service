@@ -31,19 +31,21 @@ public interface TimelineManager {
 	 */
 	public String deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound;
 	
+	public Boolean containTimeline(String timeline);
+	
 	public Set<String/*timeline*/> getkeySetOfTimelines();
 	
-	public TreeMap<Long/*Timestamp*/, String> getTimeline(String timeline) throws ExceptionTimelineResourceNotFound;
+	public TreeMap<Long/*Timestamp*/, String> get(String timeline) throws ExceptionTimelineResourceNotFound;
 	
 	public Set<Long/*Timestamp*/> getkeySetOfTimeline(String timeline) throws ExceptionTimelineResourceNotFound;
 	
 	public Map<String/*timeline*/, TreeMap<Long/*Timestamp*/, String>> getTimelines(List<String> timelines);
 	
-	public TreeMap<Long/*Timestamp*/, String> getTimelineByTime(String timeline, Long time) throws ExceptionTimelineResourceNotFound;
+	public TreeMap<Long/*Timestamp*/, String> getByTime(String timeline, Long time) throws ExceptionTimelineResourceNotFound;
 	
 	public Map<String/*timeline*/, TreeMap<Long/*Timestamp*/, String>> getTimelinesByTime(List<String> timelines, Long time);
 	
-	public TreeMap<Long/*Timestamp*/, String> getTimelineByPreiod(String timeline, Long fromTime/*inclusive*/, Long toTime/*exclusive*/) throws ExceptionTimelineResourceNotFound;
+	public TreeMap<Long/*Timestamp*/, String> getByPreiod(String timeline, Long fromTime/*inclusive*/, Long toTime/*exclusive*/) throws ExceptionTimelineResourceNotFound;
 	
 	public Map<String/*timeline*/, TreeMap<Long/*Timestamp*/, String>> getTimelinesByPreiod(List<String> timelines, Long fromTime/*inclusive*/, Long toTime/*exclusive*/);
 	

@@ -15,15 +15,18 @@ public class ServiceInstance implements Serializable {
 	
 	private Timestamp registeredTime;
 	
+	private String status;
+	
 	public ServiceInstance() {
 		
 	}
 
-	public ServiceInstance(String serviceInstanceName, String ip, Integer port, Timestamp registeredTime) {
+	public ServiceInstance(String serviceInstanceName, String ip, Integer port, Timestamp registeredTime, String status) {
 		this.serviceInstanceName = serviceInstanceName;
 		this.ip = ip;
 		this.port = port;
 		this.registeredTime = registeredTime;
+		this.status = status;
 	}
 
 	public String getServiceInstanceName() {
@@ -42,9 +45,33 @@ public class ServiceInstance implements Serializable {
 		this.registeredTime = registeredTime;
 	}
 
+	public String getIp() {
+		return ip;
+	}
+
+	public void setIp(String ip) {
+		this.ip = ip;
+	}
+
+	public Integer getPort() {
+		return port;
+	}
+
+	public void setPort(Integer port) {
+		this.port = port;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
 	@Override
 	public String toString() {
 		return "ServiceInstance [serviceInstanceName=" + serviceInstanceName + ", ip=" + ip + ", port=" + port
-				+ ", registeredTime=" + registeredTime + "]";
+				+ ", registeredTime=" + registeredTime + ", status=" + status + "]";
 	}
 }

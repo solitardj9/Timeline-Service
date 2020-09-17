@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.solitardj9.timelineService.application.testManager.service.TestManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
@@ -34,6 +33,7 @@ public class ServiceController {
 	
 	private ObjectMapper om = new ObjectMapper();
 	
+	@SuppressWarnings("rawtypes")
 	@PutMapping(value="/service/start")
 	public ResponseEntity startService(@RequestBody(required=false) String requestBody) {
 		//
@@ -44,6 +44,7 @@ public class ServiceController {
 		return new ResponseEntity<>(HttpStatus.OK);
     }
 	
+	@SuppressWarnings("rawtypes")
 	@PutMapping(value="/service/stop")
 	public ResponseEntity stopService(@RequestBody(required=false) String requestBody) {
 		//
@@ -54,6 +55,7 @@ public class ServiceController {
 		return new ResponseEntity<>(HttpStatus.OK);
     }
 	
+	@SuppressWarnings("rawtypes")
 	@GetMapping(value="/service/instances")
 	public ResponseEntity getServiceInstances(@RequestBody(required=false) String requestBody) {
 		//
@@ -68,4 +70,6 @@ public class ServiceController {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
     }
+	
+	// TODO : add to check health interface
 }

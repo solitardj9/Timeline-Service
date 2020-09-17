@@ -14,7 +14,7 @@ public interface TimelineSyncManager {
 	 * @param timeline
 	 * @throws ExceptionTimelineConflictFailure
 	 */
-	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure;
+	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure, ExceptionTimelineInternalFailure;
 	
 	/**
 	 * if success replicate deleted timeline.

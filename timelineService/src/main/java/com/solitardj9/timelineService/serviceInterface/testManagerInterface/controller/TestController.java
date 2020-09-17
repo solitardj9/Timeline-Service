@@ -21,6 +21,7 @@ public class TestController {
 	@Autowired
 	TestManager testManager;
 	
+	@SuppressWarnings("rawtypes")
 	@PutMapping(value="/publish")
 	public ResponseEntity publishMessage(@RequestBody(required=false) String requestBody) {
 		//

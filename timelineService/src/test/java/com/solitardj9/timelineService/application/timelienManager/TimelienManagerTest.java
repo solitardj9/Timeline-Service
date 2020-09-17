@@ -67,7 +67,7 @@ public class TimelienManagerTest {
 		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
 			try {
-				System.out.println(timelineManager.getTimeline(timelineName).toString());
+				System.out.println(timelineManager.get(timelineName).toString());
 			} catch (ExceptionTimelineResourceNotFound e) {
 				e.printStackTrace();
 			}
@@ -90,7 +90,7 @@ public class TimelienManagerTest {
 		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
 			try {
-				System.out.println(timelineManager.getTimeline(timelineName).toString());
+				System.out.println(timelineManager.get(timelineName).toString());
 			} catch (ExceptionTimelineResourceNotFound e) {
 				e.printStackTrace();
 			}
@@ -113,7 +113,7 @@ public class TimelienManagerTest {
 		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
 			try {
-				System.out.println(timelineManager.getTimeline(timelineName).toString());
+				System.out.println(timelineManager.get(timelineName).toString());
 			} catch (ExceptionTimelineResourceNotFound e) {
 				e.printStackTrace();
 			}
@@ -134,7 +134,7 @@ public class TimelienManagerTest {
 		for (int i = 0 ; i < testCount ; i++) {
 			timelineName = "timeline" + i;
 			try {
-				System.out.println(timelineManager.getTimeline(timelineName).toString());
+				System.out.println(timelineManager.get(timelineName).toString());
 			} catch (ExceptionTimelineResourceNotFound e) {
 				e.printStackTrace();
 			}

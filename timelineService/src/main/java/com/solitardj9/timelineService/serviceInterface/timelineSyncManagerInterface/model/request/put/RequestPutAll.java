@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model;
+package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.request.put;
 
 import java.util.TreeMap;
 
