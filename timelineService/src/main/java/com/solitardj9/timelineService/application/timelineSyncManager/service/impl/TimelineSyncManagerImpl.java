@@ -1,8 +1,10 @@
 package com.solitardj9.timelineService.application.timelineSyncManager.service.impl;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import javax.annotation.PostConstruct;
@@ -97,8 +99,8 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		return TimelineExistStatus.LOCAL;
 	}
 	
-	@SuppressWarnings("unchecked")
-	private TreeMap<Long, String> getTimelineFromCluster(String timeline) {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private TreeMap<Long, String> getTimelineFromCluster(String timeline) throws ExceptionTimelineResourceNotFound {
 		//
 		Map<String, ServiceInstance> serviceInstances = serviceInstancesManager.getOnlineServiceInstancesWithoutMe();
 		ServiceInstance selectedServiceInstance = serviceInstances.get((serviceInstances.keySet().toArray())[0]);
@@ -107,27 +109,33 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		
 		String ip = selectedServiceInstance.getIp();
 		Integer port = selectedServiceInstance.getPort();
-		String url = scheme + "://" + ip + ":" + port.toString();
+		String url = ip + ":" + port.toString();
 		
-	    String path = "timeline-service/timelines/{timeline}";
+	    String path = "timeline-service/timelines/{timeline}/values";
 	    path = path.replace("{timeline}", timeline);
 	    
 	    HttpHeaders headers = new HttpHeaders();
 		headers.add("Content-Type", "application/json");
 		
-		String requestBody = "{\r\n" + 
-							 "	\"type\" : \"get\"\r\n" + 
-							 "}";
+		Map<String, Object> queryParams = new HashMap<>();
+		queryParams.put("type", "get");
 		
-		// TODO : change method
-		
-		
-		ResponseEntity<String> response = httpProxyAdaptor.executeHttpProxy(scheme, url, path, null, HttpMethod.GET, headers, requestBody);
+		ResponseEntity<String> response = httpProxyAdaptor.executeHttpProxy(scheme, url, path, queryParams, HttpMethod.GET, headers, null);
 		String responseBody = response.getBody();
 		
+		Map<String, Object> responseMap = new HashMap<>();
 		TreeMap<Long, String> retMap = new TreeMap<>();
 		try {
-			retMap = om.readValue(responseBody, TreeMap.class);
+			responseMap = om.readValue(responseBody, Map.class);
+			if (((Integer)responseMap.get("status")).equals(200)) {
+				Map<String, Object> values = (Map)responseMap.get("values");
+				for (Entry<String, Object> iter : values.entrySet()) {
+					retMap.put(Long.valueOf(iter.getKey()), (String)iter.getValue());
+				}
+			}
+			else {
+				throw new ExceptionTimelineResourceNotFound();
+			}
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
 			logger.error("[TimelineSyncManager].getTimelineFromCluster : error = " + e.getStackTrace());
@@ -165,8 +173,8 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		}
 		else if (status.equals(TimelineExistStatus.CLUSTER)) {
 			//
-			TreeMap<Long, String> values = getTimelineFromCluster(timeline);
 			try {
+				TreeMap<Long, String> values = getTimelineFromCluster(timeline);
 				timelineManager.addTimeline(timeline);
 				timelineManager.putAll(timeline, values);
 			} catch (ExceptionTimelineConflictFailure | ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure e) {

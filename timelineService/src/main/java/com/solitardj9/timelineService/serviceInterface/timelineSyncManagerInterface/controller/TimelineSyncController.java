@@ -131,11 +131,16 @@ public class TimelineSyncController {
 		logger.info("[TimelineSyncController].getTimelineValues is called.");
 		
 		TreeMap<Long, String> retMap = new TreeMap<>();
-			
+		String retStr = null;
 		if (type.equals("get")) {
 			//
 			try {
 				retMap = timelineManager.get(timeline);
+				try {
+					retStr = om.writeValueAsString(retMap);
+				} catch (JsonProcessingException e) {
+					e.printStackTrace();
+				}
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
 				logger.error("[TimelineSyncController].get : error = " + e.getStackTrace());
@@ -168,6 +173,7 @@ public class TimelineSyncController {
 		}
 		
 		return new ResponseEntity<>(new ResponseTimelineValues(HttpStatus.OK.value(), retMap), HttpStatus.OK);
+		//return new ResponseEntity<>(new ResponseTimelineValues(HttpStatus.OK.value(), retStr), HttpStatus.OK);
 	}
 	
 	@SuppressWarnings("rawtypes")

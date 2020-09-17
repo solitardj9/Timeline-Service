@@ -82,6 +82,7 @@ public class HttpProxyAdaptorImpl implements HttpProxyAdaptor {
 	public ResponseEntity<String> executeHttpProxy(String scheme, String url, String path, Map<String, Object> queryParams, HttpMethod method, HttpHeaders headers, String body) {
 		//
 		if (url != null) {
+			url = scheme + "://" + url;
 			UriComponentsBuilder uriComponentsBuilder = makeUriComponentsBuilder(scheme, url, path);
 			
 			if (queryParams != null) {

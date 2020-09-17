@@ -93,11 +93,11 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	@Override
 	public void registerService(String serviceName) {
 		//
+		this.serviceName = serviceName;
 		try {
 			if (!inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).containsKey(serviceName)) {
 				ServiceInstance serviceInstance = new ServiceInstance(serviceName, ip, port, new Timestamp(System.currentTimeMillis()), ServiceInstanceStatus.ONLINE.getStatus());
 				inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).put(serviceName, serviceInstance);
-				this.serviceName = serviceName;
 			}
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
 			logger.error("[ServiceInstancesManager].registerService : error = " + e.getStackTrace());
