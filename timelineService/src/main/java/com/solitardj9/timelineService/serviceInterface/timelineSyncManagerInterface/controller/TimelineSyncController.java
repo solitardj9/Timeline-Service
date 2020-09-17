@@ -437,20 +437,20 @@ public class TimelineSyncController {
 	 * @param timeline
 	 * @param requestBody
 	 * 		- remove
-	 * 			"type" : "remove",
-	 * 			"time" : {Long} 
+	 * 				"type" : "remove",
+	 * 				"time" : {Long} 
 	 * 		- remove by times
-	 * 			"type" : "removeByTimes",
-	 * 			"requestBody(times)" : [{Long}, ... , {Long}] 
+	 * 				"type" : "removeByTimes",
+	 * 				"requestBody(times)" : [{Long}, ... , {Long}] 
 	 * 		- remove by period
-	 * 			"type" : "removeByPeriod",
-	 * 			"fromTime" : {Long}, 
-	 * 			"toTime" : {Long}
+	 * 				"type" : "removeByPeriod",
+	 * 				"fromTime" : {Long}, 
+	 * 				"toTime" : {Long}
 	 * 		- remove by times
-	 * 			"type" : "removeByBefore",
-	 * 			"toTime" : {Long} 
+	 * 				"type" : "removeByBefore",
+	 * 				"toTime" : {Long} 
 	 * 		- clear
-	 * 			"type" : "clear",
+	 * 				"type" : "clear",
 	 * @return
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -496,7 +496,7 @@ public class TimelineSyncController {
 				}
 			} catch (JsonProcessingException e) {
 				//e.printStackTrace();
-				logger.error("[TimelineSyncController].deleteTimelineValues : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].removeByTimes : error = " + e.getStackTrace());
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 			}
 		}
