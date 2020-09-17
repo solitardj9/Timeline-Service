@@ -1,4 +1,4 @@
-package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model;
+package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response;
 
 public class ResponseDefualt {
 	//

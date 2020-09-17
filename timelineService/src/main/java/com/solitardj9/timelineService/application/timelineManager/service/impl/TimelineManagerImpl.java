@@ -62,7 +62,7 @@ public class TimelineManagerImpl implements TimelineManager {
 	}
 	
 	@Override
-	public TreeMap<Long, String> getTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
+	public TreeMap<Long, String> get(String timeline) throws ExceptionTimelineResourceNotFound {
 		//
 		if (!timelines.containsKey(timeline)) {
 			throw new ExceptionTimelineResourceNotFound();
@@ -88,7 +88,7 @@ public class TimelineManagerImpl implements TimelineManager {
 		Map<String, TreeMap<Long, String>> retMap = new HashMap<>();
 		for (String timeline : timelines) {
 			try {
-				retMap.put(timeline, getTimeline(timeline));
+				retMap.put(timeline, get(timeline));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
 				logger.error("[TimelineManager].getTimelines : error = " + e.getStackTrace());
@@ -99,7 +99,7 @@ public class TimelineManagerImpl implements TimelineManager {
 	}
 
 	@Override
-	public TreeMap<Long, String> getTimelineByTime(String timeline, Long time) throws ExceptionTimelineResourceNotFound {
+	public TreeMap<Long, String> getByTime(String timeline, Long time) throws ExceptionTimelineResourceNotFound {
 		//
 		TreeMap<Long, String> retMap = new TreeMap<>();
 		
@@ -117,7 +117,7 @@ public class TimelineManagerImpl implements TimelineManager {
 		Map<String, TreeMap<Long, String>> retMap = new HashMap<>();
 		for (String timeline : timelines) {
 			try {
-				retMap.put(timeline, getTimelineByTime(timeline, time));
+				retMap.put(timeline, getByTime(timeline, time));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
 				logger.error("[TimelineManager].getTimelinesByTime : error = " + e.getStackTrace());
@@ -128,7 +128,7 @@ public class TimelineManagerImpl implements TimelineManager {
 	}
 
 	@Override
-	public TreeMap<Long, String> getTimelineByPreiod(String timeline, Long fromTime, Long toTime) throws ExceptionTimelineResourceNotFound {
+	public TreeMap<Long, String> getByPreiod(String timeline, Long fromTime, Long toTime) throws ExceptionTimelineResourceNotFound {
 		//
 		TreeMap<Long, String> retMap = new TreeMap<>();
 		
@@ -146,7 +146,7 @@ public class TimelineManagerImpl implements TimelineManager {
 		Map<String, TreeMap<Long, String>> retMap = new HashMap<>();
 		for (String timeline : timelines) {
 			try {
-				retMap.put(timeline, getTimelineByPreiod(timeline, fromTime, toTime));
+				retMap.put(timeline, getByPreiod(timeline, fromTime, toTime));
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
 				logger.error("[TimelineManager].getTimelinesByPreiod : error = " + e.getStackTrace());
