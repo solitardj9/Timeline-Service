@@ -6,6 +6,8 @@ service:
   # change point to scalability
   consumer: 'consumer_1'
   consumerGroup: 'consumer_group_1'
+  healthCheckBatch: '*/1 * * * * ?'
+  healthCheckMissTermByMs: 3000
   
 systemInterface:
   inMemoryInterface:
@@ -49,3 +51,21 @@ systemInterface:
           connectionCount: 2
           recvChannel: 2
           sendChannel: 1
+  httpInterface:
+    httpProxyAdaptor:
+      restTemplate:
+        requestFactory:
+          # file or normal
+          mode: file
+          readTimeout: 30000
+          
+## Multipart properties
+# Enable multipart uploads
+spring:
+  servlet:
+    multipart:
+      enabled: true
+# Max file size.
+      max-file-size: 200MB
+# Max Request Size
+      max-request-size: 215MB

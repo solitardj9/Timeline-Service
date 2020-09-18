@@ -19,4 +19,8 @@ public interface ServiceInstancesManager {
 	 * @return
 	 */
 	public Map<String, ServiceInstance> getOnlineServiceInstancesWithoutMe();
+	
+	public void checkHealth();
+	
+	public Boolean isRegistered();
 }

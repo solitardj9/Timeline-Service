@@ -5,4 +5,6 @@ public interface ServiceManager {
 	public void startService();
 	
 	public void stopService();
+	
+	public String getServiceName();
 }

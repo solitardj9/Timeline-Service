@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentNavigableMap;
 
 import com.solitardj9.timelineService.application.timelineManager.model.PutValue;
 import com.solitardj9.timelineService.application.timelineManager.model.PutValues;
@@ -129,4 +130,10 @@ public interface TimelineManager {
 	public Boolean isEmpty(String timeline) throws ExceptionTimelineResourceNotFound;
 	
 	public Integer size(String timeline) throws ExceptionTimelineResourceNotFound;
+	
+	public Map<String, ConcurrentNavigableMap<Long, String>> getTimelines();
+	
+	public void backupTimelines(String fileName);
+	
+	public void restoreTimelines(String fileName);
 }

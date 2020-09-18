@@ -1,5 +1,6 @@
 package com.solitardj9.timelineService.serviceInterface.serviceManagerInterface.controller;
 
+import java.sql.Timestamp;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineRestoreManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
+import com.solitardj9.timelineService.serviceInterface.serviceManagerInterface.model.ServiceHealth;
 
 @RestController
 @RequestMapping(value="/timeline-service/management")
@@ -30,6 +33,9 @@ public class ServiceController {
 	
 	@Autowired
 	ServiceInstancesManager serviceInstancesManager;
+	
+	@Autowired
+	TimelineRestoreManager timelineRestoreManager;
 	
 	private ObjectMapper om = new ObjectMapper();
 	
@@ -71,5 +77,23 @@ public class ServiceController {
 		}
     }
 	
-	// TODO : add to check health interface
+	@SuppressWarnings("rawtypes")
+	@GetMapping(value="/service/health")
+	public ResponseEntity checkHealth(@RequestBody(required=false) String requestBody) {
+		//
+		//logger.info("[ServiceController].checkHealth is called.");
+		
+		return new ResponseEntity<>(new ServiceHealth(serviceManager.getServiceName(), new Timestamp(System.currentTimeMillis()), serviceInstancesManager.isRegistered()), HttpStatus.OK);
+    }
+	
+	@SuppressWarnings("rawtypes")
+	@GetMapping(value="/service/restore")
+	public ResponseEntity restore(@RequestBody(required=false) String requestBody) {
+		//
+		logger.info("[ServiceController].restore is called.");
+		
+		timelineRestoreManager.testRestore();
+		
+		return new ResponseEntity<>(HttpStatus.OK);
+    } 
 }

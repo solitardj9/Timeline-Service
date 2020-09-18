@@ -10,9 +10,12 @@ public class TimelineServiceApplication {
 	public static void main(String[] args) {
 		//
 		ConfigurableApplicationContext context = SpringApplication.run(TimelineServiceApplication.class, args);
-		
-		// TODO : API 조회 시 없으면 다른 노드에서도 조회하도록 기능을 확장 개선할 것
-		// 그렇다면 조회도 TimelineSyncManager 통해서 가져가도록 해봐야 겠다.....
 	
+		
+		// TODO ; 
+		// 1. add file download to http proxy manager --> 임시 폴더에 생성딤.....이거 해결해야 할듯
+		// 2. add restore status and function to service instances manager
+		// 3. add timeline restore manager <-- spring event --> service instances manager
+		// 4. modify replication manager to avoid conflict with timeline restore manager
 	}
 }

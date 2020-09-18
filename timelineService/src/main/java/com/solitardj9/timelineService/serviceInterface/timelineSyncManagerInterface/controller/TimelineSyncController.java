@@ -1,15 +1,25 @@
 package com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.controller;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +38,7 @@ import com.solitardj9.timelineService.application.timelineManager.service.except
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineSyncManager;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.exception.FileDownloadException;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.request.put.RequestPut;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.request.put.RequestPutAll;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response.ResponseDefualt;
@@ -38,6 +49,7 @@ import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterf
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response.ResponseTimelineSize;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response.ResponseTimelineValues;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response.ResponseTimelinesValues;
+import com.solitardj9.timelineService.utils.fileUtil.MapFileUtil;
 
 @RestController
 @RequestMapping(value="/timeline-service/")
@@ -131,16 +143,10 @@ public class TimelineSyncController {
 		logger.info("[TimelineSyncController].getTimelineValues is called.");
 		
 		TreeMap<Long, String> retMap = new TreeMap<>();
-		String retStr = null;
 		if (type.equals("get")) {
 			//
 			try {
 				retMap = timelineManager.get(timeline);
-				try {
-					retStr = om.writeValueAsString(retMap);
-				} catch (JsonProcessingException e) {
-					e.printStackTrace();
-				}
 			} catch (ExceptionTimelineResourceNotFound e) {
 				//e.printStackTrace();
 				logger.error("[TimelineSyncController].get : error = " + e.getStackTrace());
@@ -173,7 +179,6 @@ public class TimelineSyncController {
 		}
 		
 		return new ResponseEntity<>(new ResponseTimelineValues(HttpStatus.OK.value(), retMap), HttpStatus.OK);
-		//return new ResponseEntity<>(new ResponseTimelineValues(HttpStatus.OK.value(), retStr), HttpStatus.OK);
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -585,5 +590,61 @@ public class TimelineSyncController {
 		
 		return new ResponseEntity<>(new ResponseTimelineSize(HttpStatus.OK.value(), ret), HttpStatus.OK);
 	}
-
+	
+	@GetMapping("/timelines/backup/{fileName}")
+    public ResponseEntity<Resource> getBackup(@PathVariable String fileName,
+    											 HttpServletRequest request) {
+		//
+		timelineManager.backupTimelines(fileName);
+		
+		// Load file as Resource
+		Resource resource = loadFileAsResource(fileName);
+		
+		// Try to determine file's content type
+		String contentType = null;
+		try {
+			contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+		} catch (IOException e) {
+			logger.error("[TimelineSyncController].getBackup : error = could not determine file type.");
+		}
+		
+		// Fallback to the default content type if type could not be determined
+		if(contentType == null) {
+			contentType = "application/octet-stream";
+		}
+		
+		return ResponseEntity.ok()
+				.contentType(MediaType.parseMediaType(contentType))
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+				.body(resource);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@DeleteMapping("/timelines/backup/{fileName}")
+    public ResponseEntity deleteBackup(@PathVariable String fileName) {
+		//
+		if (MapFileUtil.deleteFile(fileName)) {
+			return new ResponseEntity<>(new ResponseDefualt(HttpStatus.OK.value()), HttpStatus.OK);
+		}
+		else {
+			return new ResponseEntity<>(new ResponseDefualt(HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.OK);
+		}
+	}
+	
+	private Resource loadFileAsResource(String fileName) {
+		//
+		try {
+			Path fileLocation = Paths.get(fileName).toAbsolutePath().normalize();
+			Resource resource = new UrlResource(fileLocation.toUri());
+			
+			if(resource.exists()) {
+				return resource;
+			}
+			else {
+				throw new FileDownloadException(fileName + " not found.");
+			}
+		} catch (MalformedURLException e) {
+			throw new FileDownloadException(fileName + " not found.", e);
+		}
+	}
 }

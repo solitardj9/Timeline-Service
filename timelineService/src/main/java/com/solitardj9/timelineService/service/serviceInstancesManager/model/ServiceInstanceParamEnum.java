@@ -25,8 +25,10 @@ public class ServiceInstanceParamEnum {
 	
 	public enum ServiceInstanceStatus {
 	    //
-		ONLINE("online"),
-		OFFLINE("offline")
+		OFFLINE("offline"),
+		REGISTERED("registered"),
+		RESTORE("restore"),
+		ONLINE("online")
 		;
 		
 		private String status;

@@ -26,6 +26,7 @@ import com.solitardj9.timelineService.application.timelineManager.service.Timeli
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
+import com.solitardj9.timelineService.utils.fileUtil.MapFileUtil;
 import com.solitardj9.timelineService.utils.jsonUtil.JsonUtil;
 
 @Service("timelineManager")
@@ -376,5 +377,22 @@ public class TimelineManagerImpl implements TimelineManager {
 			throw new ExceptionTimelineResourceNotFound();
 		}
 		return timelines.get(timeline).size();
+	}
+	
+	@Override
+	public Map<String, ConcurrentNavigableMap<Long, String>> getTimelines() {
+		return timelines;
+	}
+
+	@Override
+	public void backupTimelines(String fileName) {
+		//
+		MapFileUtil.writeTimelinespAsFile(timelines, fileName);
+	}
+
+	@Override
+	public void restoreTimelines(String fileName) {
+		// TODO Auto-generated method stub
+		
 	}
 }

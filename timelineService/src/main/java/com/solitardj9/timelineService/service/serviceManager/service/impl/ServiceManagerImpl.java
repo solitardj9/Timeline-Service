@@ -111,4 +111,10 @@ public class ServiceManagerImpl implements ServiceManager, ServiceInstancesCallb
 			networkInterfceManager.bindQueueWithExchange(queueForCluster, otherExchangeForCluster, routingKey);
 		}
 	}
+	
+	
+	public String getServiceName() {
+		//
+		return this.serviceConsumer;
+	}
 }

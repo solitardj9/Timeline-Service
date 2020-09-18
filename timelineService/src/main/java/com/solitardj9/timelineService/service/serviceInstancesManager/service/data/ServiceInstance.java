@@ -17,16 +17,19 @@ public class ServiceInstance implements Serializable {
 	
 	private String status;
 	
+	private Timestamp updatedTime;
+	
 	public ServiceInstance() {
 		
 	}
 
-	public ServiceInstance(String serviceInstanceName, String ip, Integer port, Timestamp registeredTime, String status) {
+	public ServiceInstance(String serviceInstanceName, String ip, Integer port, Timestamp registeredTime, String status, Timestamp updatedTime) {
 		this.serviceInstanceName = serviceInstanceName;
 		this.ip = ip;
 		this.port = port;
 		this.registeredTime = registeredTime;
 		this.status = status;
+		this.updatedTime = updatedTime;
 	}
 
 	public String getServiceInstanceName() {
@@ -69,9 +72,17 @@ public class ServiceInstance implements Serializable {
 		this.status = status;
 	}
 
+	public Timestamp getUpdatedTime() {
+		return updatedTime;
+	}
+
+	public void setUpdatedTime(Timestamp updatedTime) {
+		this.updatedTime = updatedTime;
+	}
+
 	@Override
 	public String toString() {
 		return "ServiceInstance [serviceInstanceName=" + serviceInstanceName + ", ip=" + ip + ", port=" + port
-				+ ", registeredTime=" + registeredTime + ", status=" + status + "]";
+				+ ", registeredTime=" + registeredTime + ", status=" + status + ", updatedTime=" + updatedTime + "]";
 	}
 }

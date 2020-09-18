@@ -4,7 +4,6 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import javax.annotation.PostConstruct;
@@ -36,6 +35,7 @@ import com.solitardj9.timelineService.application.timelineSyncManager.service.da
 import com.solitardj9.timelineService.application.timelineSyncManager.service.data.TimelineSyncManagerParamsEnum.TimelineExistStatus;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
+import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response.ResponseTimelineValues;
 import com.solitardj9.timelineService.systemInterface.httpInterface.service.HttpProxyAdaptor;
 import com.solitardj9.timelineService.systemInterface.inMemoryInterface.model.InMemoryInstance;
 import com.solitardj9.timelineService.systemInterface.inMemoryInterface.service.InMemoryManager;
@@ -99,7 +99,6 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		return TimelineExistStatus.LOCAL;
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private TreeMap<Long, String> getTimelineFromCluster(String timeline) throws ExceptionTimelineResourceNotFound {
 		//
 		Map<String, ServiceInstance> serviceInstances = serviceInstancesManager.getOnlineServiceInstancesWithoutMe();
@@ -111,10 +110,10 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		Integer port = selectedServiceInstance.getPort();
 		String url = ip + ":" + port.toString();
 		
-	    String path = "timeline-service/timelines/{timeline}/values";
-	    path = path.replace("{timeline}", timeline);
-	    
-	    HttpHeaders headers = new HttpHeaders();
+		String path = "timeline-service/timelines/{timeline}/values";
+		path = path.replace("{timeline}", timeline);
+		
+		HttpHeaders headers = new HttpHeaders();
 		headers.add("Content-Type", "application/json");
 		
 		Map<String, Object> queryParams = new HashMap<>();
@@ -123,15 +122,32 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		ResponseEntity<String> response = httpProxyAdaptor.executeHttpProxy(scheme, url, path, queryParams, HttpMethod.GET, headers, null);
 		String responseBody = response.getBody();
 		
-		Map<String, Object> responseMap = new HashMap<>();
+//		Map<String, Object> responseMap = new HashMap<>();
+//		TreeMap<Long, String> retMap = new TreeMap<>();
+//		try {
+//			responseMap = om.readValue(responseBody, Map.class);
+//			if (((Integer)responseMap.get("status")).equals(200)) {
+//				Map<String, Object> values = (Map)responseMap.get("values");
+//				for (Entry<String, Object> iter : values.entrySet()) {
+//					retMap.put(Long.valueOf(iter.getKey()), (String)iter.getValue());
+//				}
+//			}
+//			else {
+//				throw new ExceptionTimelineResourceNotFound();
+//			}
+//		} catch (JsonProcessingException e) {
+//			//e.printStackTrace();
+//			logger.error("[TimelineSyncManager].getTimelineFromCluster : error = " + e.getStackTrace());
+//			return retMap;
+//		}
+//		
+//		return retMap;
+		
 		TreeMap<Long, String> retMap = new TreeMap<>();
 		try {
-			responseMap = om.readValue(responseBody, Map.class);
-			if (((Integer)responseMap.get("status")).equals(200)) {
-				Map<String, Object> values = (Map)responseMap.get("values");
-				for (Entry<String, Object> iter : values.entrySet()) {
-					retMap.put(Long.valueOf(iter.getKey()), (String)iter.getValue());
-				}
+			ResponseTimelineValues responseObj = om.readValue(responseBody, ResponseTimelineValues.class);
+			if (responseObj.getStatus().equals(200)) {
+				return responseObj.getValues();
 			}
 			else {
 				throw new ExceptionTimelineResourceNotFound();
@@ -141,8 +157,6 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 			logger.error("[TimelineSyncManager].getTimelineFromCluster : error = " + e.getStackTrace());
 			return retMap;
 		}
-		
-		return retMap;
 	}
 	
 	@Override
@@ -190,6 +204,8 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		}
 	}
 
+	// TODO : need to make coverage codes for Fail Over
+	
 	@Override
 	public void deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
 		//
