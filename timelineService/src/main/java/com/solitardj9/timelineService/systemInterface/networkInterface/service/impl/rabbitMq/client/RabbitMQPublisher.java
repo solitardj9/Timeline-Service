@@ -19,143 +19,137 @@ public class RabbitMQPublisher {
 	
 	private String publisherTag;
 	
-    private Channel channel;
-    
-    @SuppressWarnings("unused")
+	private Channel channel;
+	
+	@SuppressWarnings("unused")
 	private RabbitMQClient rabbitMQClient;
-    
-    private ToPublish toPublish;
-    
-    public Channel getChannel() {
+	
+	private ToPublish toPublish;
+	
+	public Channel getChannel() {
 		return this.channel;
 	}
-    
-    public void setChannel(Channel channel) {
+	
+	public void setChannel(Channel channel) {
 		this.channel = channel;
 	}
-
-    @SuppressWarnings("unused")
+	
+	@SuppressWarnings("unused")
 	public String createRabbitMQPublisher(RabbitMQClient rabbitMQClient, ToPublish toPublish, Channel channel) {
-    	//
+		//
 		this.rabbitMQClient = rabbitMQClient;
-    	this.channel = channel;
-    	this.toPublish = toPublish;
-    	
-    	try {
+		this.channel = channel;
+		this.toPublish = toPublish;
+		
+		try {
 			this.channel.confirmSelect();
 		} catch (IOException e) {
 			//e.printStackTrace();
 			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.getStackTrace());
 		}
-    	
-    	try {
-    		
-    		while (true) {
-    			//
-    			if (this.toPublish instanceof ExchangeToPublish) {
-    				com.rabbitmq.client.AMQP.Exchange.DeclareOk declareOk = null;
-	    			try {
-	    				declareOk = this.channel.exchangeDeclare(((ExchangeToPublish)toPublish).getExchange(), ((ExchangeToPublish)toPublish).getType(), toPublish.isDurable(), toPublish.isAutoDelete(), toPublish.getArguments());
-	    			} catch (Exception e) {
-	    				logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + ((ExchangeToPublish)toPublish).getExchange() + " is not yet declared");
-	    				try {
+		
+		try {
+			while (true) {
+				//
+				if (this.toPublish instanceof ExchangeToPublish) {
+					com.rabbitmq.client.AMQP.Exchange.DeclareOk declareOk = null;
+					try {
+						declareOk = this.channel.exchangeDeclare(((ExchangeToPublish)toPublish).getExchange(), ((ExchangeToPublish)toPublish).getType(), toPublish.isDurable(), toPublish.isAutoDelete(), toPublish.getArguments());
+					} catch (Exception e) {
+						logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + ((ExchangeToPublish)toPublish).getExchange() + " is not yet declared");
+						try {
 							Thread.sleep(500);
 						} catch (InterruptedException ie) {
 							logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + ie.getStackTrace());
 						}
-	    			}
-	    			break;
-    			}
+					}
+					break;
+				}
     			else {
     				com.rabbitmq.client.AMQP.Queue.DeclareOk declareOk = null;
-    	    		while (true) {
-    	    			//
-    	    			declareOk = this.channel.queueDeclare(((QueueToPublish)toPublish).getQueue(), toPublish.isDurable(), ((QueueToPublish)toPublish).isExclusive(), toPublish.isAutoDelete(), toPublish.getArguments());
-    	    			if (declareOk.getQueue().equals(((QueueToPublish)toPublish).getQueue())) {
-    	    				break;
-    	    			}
-    	    			Thread.sleep(500);
-    	    		}
+    				while (true) {
+    					//
+    					declareOk = this.channel.queueDeclare(((QueueToPublish)toPublish).getQueue(), toPublish.isDurable(), ((QueueToPublish)toPublish).isExclusive(), toPublish.isAutoDelete(), toPublish.getArguments());
+    					if (declareOk.getQueue().equals(((QueueToPublish)toPublish).getQueue())) {
+    						break;
+    					}
+    					Thread.sleep(500);
+    				}
     			}
-    		}
-    		
-    		this.publisherTag = UUID.randomUUID().toString(); 
+			}
+			
+			this.publisherTag = UUID.randomUUID().toString();
 			return this.publisherTag;
 		} catch (Exception e) {
 			//e.printStackTrace();
 			logger.error("[RabbitMQPublisher].createRabbitMQPublisher : error = " + e.getStackTrace());
 			return null;
 		}
-    }
-    
-    // TODO : confirm listener를 어떻게 붙어야 할까나
-    
-    public Boolean publish(String routingKey, String message) throws IOException, TimeoutException {
-        //
-    	try {
-	    	if (this.toPublish instanceof ExchangeToPublish) {
-	    		channel.basicPublish(((ExchangeToPublish)toPublish).getExchange(), routingKey, null, message.getBytes("UTF-8"));
-	    	}
-	    	else {
-	    		channel.basicPublish("", ((QueueToPublish)toPublish).getQueue(), null, message.getBytes("UTF-8"));
-	    	}
-	    	
-	    	// uses a 1 second timeout
-	        channel.waitForConfirmsOrDie(1000);
-	        return true;
-	        
+	}
+	
+	public Boolean publish(String routingKey, String message) throws IOException, TimeoutException {
+		//
+		try {
+			if (this.toPublish instanceof ExchangeToPublish) {
+				channel.basicPublish(((ExchangeToPublish)toPublish).getExchange(), routingKey, null, message.getBytes("UTF-8"));
+			}
+			else {
+				channel.basicPublish("", ((QueueToPublish)toPublish).getQueue(), null, message.getBytes("UTF-8"));
+			}
+			
+			// uses a 1 second timeout
+			channel.waitForConfirmsOrDie(1000);
+			return true;
     	} catch (com.rabbitmq.client.AlreadyClosedException e) {
     		//
     		Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
-        	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
-		    
-        	//e.printStackTrace();
-        	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
-        	return false;
-		
+    		((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
+    		
+    		//e.printStackTrace();
+    		logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
+    		return false;
 		} catch (Exception e) {
 			//
 			Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
-	    	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
-	    	
-		    //e.printStackTrace();
-	    	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
-	    	return false;
+			((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
+			
+			//e.printStackTrace();
+			logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
+			return false;
 		}
-    }
-    
-    public Boolean publish(String message) throws IOException, TimeoutException {
-        //
-    	try {
-	    	if (this.toPublish instanceof ExchangeToPublish) {
-	    		channel.basicPublish(((ExchangeToPublish)toPublish).getExchange(), ((ExchangeToPublish)toPublish).getRoutingKey(), null, message.getBytes("UTF-8"));
-	    	}
-	    	else {
-	    		channel.basicPublish("", ((QueueToPublish)toPublish).getQueue(), null, message.getBytes("UTF-8"));
-	    	}
-	    	
-	    	// uses a 1 second timeout
-	        channel.waitForConfirmsOrDie(1000);
-	        return true;
-    	} catch (com.rabbitmq.client.AlreadyClosedException e) {
-    		//
-    		e.printStackTrace();
-        	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
-    		
-    		Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
-        	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
-        	
-        	return false;
-		
+	}
+	
+	public Boolean publish(String message) throws IOException, TimeoutException {
+		//
+		try {
+			if (this.toPublish instanceof ExchangeToPublish) {
+				channel.basicPublish(((ExchangeToPublish)toPublish).getExchange(), ((ExchangeToPublish)toPublish).getRoutingKey(), null, message.getBytes("UTF-8"));
+			}
+			else {
+				channel.basicPublish("", ((QueueToPublish)toPublish).getQueue(), null, message.getBytes("UTF-8"));
+			}
+			
+			// uses a 1 second timeout
+			channel.waitForConfirmsOrDie(1000);
+			return true;
+		} catch (com.rabbitmq.client.AlreadyClosedException e) {
+			//
+			e.printStackTrace();
+			logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
+			
+			Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
+			((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
+			
+			return false;
 		} catch (Exception e) {
 			//
 			e.printStackTrace();
-	    	logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
+			logger.error("[RabbitMQPublisher].publish : error = " + e.getStackTrace());
 			
 			Connection connection = ((com.rabbitmq.client.impl.recovery.AutorecoveringChannel)channel).getConnection();
-	    	((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
-	    	
-	    	return false;
+			((com.rabbitmq.client.impl.recovery.AutorecoveringConnection) connection).getDelegate().flush();
+			
+			return false;
 		}
-    }
+	}
 }

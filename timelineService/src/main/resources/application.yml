@@ -6,6 +6,8 @@ service:
   # change point to scalability
   consumer: 'consumer_1'
   consumerGroup: 'consumer_group_1'
+  healthCheckBatch: '*/1 * * * * ?'
+  healthCheckMissTermByMs: 3000
   
 systemInterface:
   inMemoryInterface:

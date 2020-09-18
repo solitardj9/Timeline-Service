@@ -1,5 +1,6 @@
 package com.solitardj9.timelineService.serviceInterface.serviceManagerInterface.controller;
 
+import java.sql.Timestamp;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 import com.solitardj9.timelineService.service.serviceManager.service.ServiceManager;
+import com.solitardj9.timelineService.serviceInterface.serviceManagerInterface.model.ServiceHealth;
 
 @RestController
 @RequestMapping(value="/timeline-service/management")
@@ -71,5 +73,12 @@ public class ServiceController {
 		}
     }
 	
-	// TODO : add to check health interface
+	@SuppressWarnings("rawtypes")
+	@GetMapping(value="/service/health")
+	public ResponseEntity checkHealth(@RequestBody(required=false) String requestBody) {
+		//
+		//logger.info("[ServiceController].checkHealth is called.");
+		
+		return new ResponseEntity<>(new ServiceHealth(serviceManager.getServiceName(), new Timestamp(System.currentTimeMillis()), serviceInstancesManager.isRegistered()), HttpStatus.OK);
+    } 
 }
