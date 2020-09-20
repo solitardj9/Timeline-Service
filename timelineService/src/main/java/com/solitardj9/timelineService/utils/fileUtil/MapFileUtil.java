@@ -80,4 +80,19 @@ public class MapFileUtil {
 			return false;
 		}
 	}
+	
+	public static Boolean deleteFile(File file) {
+		//
+		if (file.exists()) {
+			if (file.delete()) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
+	}
 }
