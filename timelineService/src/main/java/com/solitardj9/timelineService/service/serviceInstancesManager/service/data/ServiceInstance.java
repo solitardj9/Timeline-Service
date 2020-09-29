@@ -3,6 +3,9 @@ package com.solitardj9.timelineService.service.serviceInstancesManager.service.d
 import java.io.Serializable;
 import java.sql.Timestamp;
 
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceClusterStatus;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceRegisterStatus;
+
 public class ServiceInstance implements Serializable {
 	
 	private static final long serialVersionUID = -8853014377660580778L;
@@ -15,20 +18,23 @@ public class ServiceInstance implements Serializable {
 	
 	private Timestamp registeredTime;
 	
-	private String status;
-	
 	private Timestamp updatedTime;
+	
+	private ServiceInstanceRegisterStatus registerStatus;
+	
+	private ServiceInstanceClusterStatus clusterStatus;
 	
 	public ServiceInstance() {
 		
 	}
 
-	public ServiceInstance(String serviceInstanceName, String ip, Integer port, Timestamp registeredTime, String status, Timestamp updatedTime) {
+	public ServiceInstance(String serviceInstanceName, String ip, Integer port, Timestamp registeredTime, ServiceInstanceRegisterStatus registerStatus, ServiceInstanceClusterStatus clusterStatus, Timestamp updatedTime) {
 		this.serviceInstanceName = serviceInstanceName;
 		this.ip = ip;
 		this.port = port;
 		this.registeredTime = registeredTime;
-		this.status = status;
+		this.registerStatus = registerStatus;
+		this.clusterStatus = clusterStatus;
 		this.updatedTime = updatedTime;
 	}
 
@@ -64,12 +70,20 @@ public class ServiceInstance implements Serializable {
 		this.port = port;
 	}
 
-	public String getStatus() {
-		return status;
+	public ServiceInstanceRegisterStatus getRegisterStatus() {
+		return registerStatus;
 	}
 
-	public void setStatus(String status) {
-		this.status = status;
+	public void setRegisterStatus(ServiceInstanceRegisterStatus registerStatus) {
+		this.registerStatus = registerStatus;
+	}
+
+	public ServiceInstanceClusterStatus getClusterStatus() {
+		return clusterStatus;
+	}
+
+	public void setClusterStatus(ServiceInstanceClusterStatus clusterStatus) {
+		this.clusterStatus = clusterStatus;
 	}
 
 	public Timestamp getUpdatedTime() {
@@ -83,6 +97,7 @@ public class ServiceInstance implements Serializable {
 	@Override
 	public String toString() {
 		return "ServiceInstance [serviceInstanceName=" + serviceInstanceName + ", ip=" + ip + ", port=" + port
-				+ ", registeredTime=" + registeredTime + ", status=" + status + ", updatedTime=" + updatedTime + "]";
+				+ ", registeredTime=" + registeredTime + ", updatedTime=" + updatedTime + ", registerStatus="
+				+ registerStatus + ", clusterStatus=" + clusterStatus + "]";
 	}
 }

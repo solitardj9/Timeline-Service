@@ -38,8 +38,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.IMap;
+import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineRestoreManager;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceClusterStatus;
 import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceInMemoryMap;
-import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceStatus;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceRegisterStatus;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesCallback;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
@@ -64,6 +66,9 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	SchedulerManager schedulerManager;
 	
 	@Autowired
+	TimelineRestoreManager timelineRestoreManager;
+	
+	@Autowired
 	HttpProxyAdaptor httpProxyAdaptor;
 	
 	@Value("${server.port}")
@@ -85,20 +90,23 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	
 	private String serviceName;
 	
-	private Boolean registerd;
+	private ServiceInstanceRegisterStatus registerStatus;
+	
+	private ServiceInstanceClusterStatus clusterStatus;
 	
 	private ObjectMapper om = new ObjectMapper();
 	
 	@PostConstruct
 	public void init() {
 		//
-		registerd = false;
+		registerStatus = ServiceInstanceRegisterStatus.UNREGISTERED;
+		clusterStatus = ServiceInstanceClusterStatus.OFFLINE;
 		
 		InMemoryInstance inMemoryInstance = new InMemoryInstance(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap(), backupCount, readBackupData, null, this);
 		try {
 			inMemoryManager.addMap(inMemoryInstance);
 		} catch (ExceptionHazelcastDataStructureCreationFailure | ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].init : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].init : error = " + e);
 		}
 		
 		try {
@@ -119,8 +127,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 				}
 			}
 		} catch (SocketException e) {
-			//e.printStackTrace();
-			logger.error("[ServiceInstancesManager].init : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].init : error = " + e);
 		}
 	}
 	
@@ -132,22 +139,36 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 	@Override
 	public void registerService(String serviceName) {
 		//
-		if (registerd == false) {
+		if (registerStatus.equals(ServiceInstanceRegisterStatus.UNREGISTERED)) {
 			//
 			this.serviceName = serviceName;
 		
-			initializeScheduler();  // TODO : backup이 완료되면 시작하도록 수정할 것
-		
 			try {
 				if (!inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).containsKey(serviceName)) {
-					ServiceInstance serviceInstance = new ServiceInstance(serviceName, ip, port, new Timestamp(System.currentTimeMillis()), ServiceInstanceStatus.ONLINE.getStatus(), new Timestamp(System.currentTimeMillis()));
+					ServiceInstance serviceInstance = new ServiceInstance(serviceName, ip, port, new Timestamp(System.currentTimeMillis()), registerStatus, clusterStatus, new Timestamp(System.currentTimeMillis()));
 					inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).put(serviceName, serviceInstance);
 				}
 			} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-				logger.error("[ServiceInstancesManager].registerService : error = " + e.getStackTrace());
+				logger.error("[ServiceInstancesManager].registerService : error = " + e);
 			}
 			
-			registerd = true;
+			registerStatus = ServiceInstanceRegisterStatus.REGISTERED;
+			
+			timelineRestoreManager.executeRestore();
+
+			clusterStatus = ServiceInstanceClusterStatus.RESTORED;
+			
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			timelineRestoreManager.restoreReplicationEvent();
+			
+			clusterStatus = ServiceInstanceClusterStatus.ONLINE;
+			
+			initializeScheduler();
 		}
 	}
 
@@ -157,16 +178,22 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 		try {
 			inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).remove(serviceName);
 			
-			registerd = false;
+			registerStatus = ServiceInstanceRegisterStatus.UNREGISTERED;
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].unregisterService : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].unregisterService : error = " + e);
 		}
 	}
 	
 	@Override
-	public Boolean isRegistered() {
+	public ServiceInstanceRegisterStatus isRegistered() {
 		//
-		return this.registerd;
+		return this.registerStatus;
+	}
+	
+	@Override
+	public ServiceInstanceClusterStatus isClustered() {
+		//
+		return this.clusterStatus;
 	}
 
 	@Override
@@ -210,7 +237,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 			
 			return retMap;
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].getServiceInstances : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].getServiceInstances : error = " + e);
 			return retMap;
 		}
 	}
@@ -224,7 +251,9 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 
 			for (Entry<Object, Object> iter : resultMap.entrySet()) {
 				if (!iter.getKey().equals(this.serviceName)) {
-					if (((ServiceInstance)iter.getValue()).getStatus().equals(ServiceInstanceStatus.ONLINE.getStatus())) {
+					if ( ((ServiceInstance)iter.getValue()).getRegisterStatus().equals(ServiceInstanceRegisterStatus.REGISTERED)
+						&& ((ServiceInstance)iter.getValue()).getClusterStatus().equals(ServiceInstanceClusterStatus.ONLINE) ) {
+						//
 						retMap.put((String)iter.getKey(), (ServiceInstance)iter.getValue());
 					}
 				}
@@ -232,7 +261,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 			
 			return retMap;
 		} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[ServiceInstancesManager].getServiceInstancesWithoutMe : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].getServiceInstancesWithoutMe : error = " + e);
 			return retMap;
 		}
 	}
@@ -268,26 +297,29 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 					
 					Long diffTime = currentTime - updatedTime;
 					if (diffTime > healthCheckMissTermByMs) {
-						serviceInstance.setStatus(ServiceInstanceStatus.OFFLINE.getStatus());
+						serviceInstance.setClusterStatus(ServiceInstanceClusterStatus.OFFLINE);
 						inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).put(serviceName, serviceInstance);
 					}
 				} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-					//e.printStackTrace();
-					logger.error("[ServiceInstancesManager].checkHealth : error = " + e.getStackTrace());
+					logger.error("[ServiceInstancesManager].checkHealth : error = " + e);
 				}
 			}
 			else {
 				try {
 					ServiceHealth serviceHealth = om.readValue(responseBody, ServiceHealth.class);
 					
-					if (serviceHealth.getIsRegistered().equals(true)) {
+					if (serviceHealth.getClusterStatus().equals(ServiceInstanceClusterStatus.RESTORED) || serviceHealth.getClusterStatus().equals(ServiceInstanceClusterStatus.ONLINE)) {
+						//
 						ServiceInstance serviceInstance = (ServiceInstance)inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).get(serviceName);
+						
+						serviceInstance.setRegisterStatus(serviceHealth.getRegisterStatus());
+						serviceInstance.setClusterStatus(serviceHealth.getClusterStatus());
 						serviceInstance.setUpdatedTime(serviceHealth.getTimestamp());
+						
 						inMemoryManager.getMap(ServiceInstanceInMemoryMap.SERVICE_INSTANCE.getMap()).put(serviceName, serviceInstance);
 					}
 				} catch (JsonProcessingException | ExceptionHazelcastDataStructureNotFoundFailure e) {
-					//e.printStackTrace();
-					logger.error("[ServiceInstancesManager].checkHealth : error = " + e.getStackTrace());
+					logger.error("[ServiceInstancesManager].checkHealth : error = " + e);
 				}
 			}
 		}
@@ -315,8 +347,7 @@ public class ServiceInstancesManagerImpl implements ServiceInstancesManager, InM
 			}
 		}
 		catch (SchedulerException e) {
-			//e.printStackTrace();
-			logger.error("[ServiceInstancesManager].initializeScheduler : error = " + e.getStackTrace());
+			logger.error("[ServiceInstancesManager].initializeScheduler : error = " + e);
 		}
 	}
 

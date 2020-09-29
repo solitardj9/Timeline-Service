@@ -28,6 +28,9 @@ import com.solitardj9.timelineService.application.timelineManager.service.Timeli
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineConflictFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
+import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineRestoreManager;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceClusterStatus;
+import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 
 @Service("replicationManager")
 public class ReplicationManagerImpl implements ReplicationManager {
@@ -40,7 +43,22 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@Autowired
 	TimelineManager timelineManager;
 	
+	@Autowired
+	TimelineRestoreManager timelineRestoreManager;
+	
+	@Autowired
+	ServiceInstancesManager serviceInstancesManager;
+	
 	private ObjectMapper om = new ObjectMapper();
+	
+	private Boolean isServiceAvailable() {
+		//
+		if (serviceInstancesManager.isClustered().equals(ServiceInstanceClusterStatus.RESTORED)
+				|| serviceInstancesManager.isClustered().equals(ServiceInstanceClusterStatus.ONLINE)) {
+			return true;
+		}
+		return false;
+	}
 	
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'addTimeline'")
 	public void onConsumeMessageForReplicate(ConsumeMessage consumeMessage) {
@@ -49,8 +67,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 		try {
 			timelineManager.addTimeline(timeline);
 		} catch (ExceptionTimelineConflictFailure e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForReplicate : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].onConsumeMessageForReplicate : error = " + e);
 		} finally {
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
@@ -59,13 +76,19 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'deleteTimeline'")
 	public void onConsumeMessageForDelete(ConsumeMessage consumeMessage) {
 		//
-		String timeline = consumeMessage.getMessage();
-		try {
-			timelineManager.deleteTimeline(timeline);
-		} catch (ExceptionTimelineResourceNotFound e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForDelete : error = " + e.getStackTrace());
-		} finally {
+		if (isServiceAvailable()) {
+			String timeline = consumeMessage.getMessage();
+			try {
+				timelineManager.deleteTimeline(timeline);
+			} catch (ExceptionTimelineResourceNotFound e) {
+				logger.error("[ReplicationManager].onConsumeMessageForDelete : error = " + e);
+			} finally {
+				publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
+			}
+		}
+		else {
+			timelineRestoreManager.addReplicationEvent(consumeMessage);
+			
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
 	}
@@ -78,8 +101,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			PutValue putValue = om.readValue(strPutValue, PutValue.class);
 			timelineManager.put(putValue.getTimeline(), putValue.getTimestamp(), putValue.getValue());
 		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForPut : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].onConsumeMessageForPut : error = " + e);
 		} finally {
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
@@ -93,8 +115,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			PutValues putValues = om.readValue(strPutValues, PutValues.class);
 			timelineManager.putAll(putValues.getTimeline(), putValues.getValues());
 		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForPutAll : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].onConsumeMessageForPutAll : error = " + e);
 		} finally {
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
@@ -108,8 +129,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			PutValue putValue = om.readValue(strPutValue, PutValue.class);
 			timelineManager.put(putValue.getTimeline(), putValue.getTimestamp(), putValue.getValue());
 		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForUpdate : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].onConsumeMessageForUpdate : error = " + e);
 		} finally {
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
@@ -123,8 +143,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			PutValues putValues = om.readValue(strPutValues, PutValues.class);
 			timelineManager.putAll(putValues.getTimeline(), putValues.getValues());
 		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForUpdateAll : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].onConsumeMessageForUpdateAll : error = " + e);
 		} finally {
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
@@ -133,14 +152,20 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'remove'")
 	public void onConsumeMessageForRemove(ConsumeMessage consumeMessage) {
 		//
-		String strRemove = consumeMessage.getMessage();
-		try {
-			Remove remove = om.readValue(strRemove, Remove.class);
-			timelineManager.remove(remove.getTimeline(), remove.getTimestamp());
-		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForRemove : error = " + e.getStackTrace());
-		} finally {
+		if (isServiceAvailable()) {
+			String strRemove = consumeMessage.getMessage();
+			try {
+				Remove remove = om.readValue(strRemove, Remove.class);
+				timelineManager.remove(remove.getTimeline(), remove.getTimestamp());
+			} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
+				logger.error("[ReplicationManager].onConsumeMessageForRemove : error = " + e);
+			} finally {
+				publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
+			}
+		}
+		else {
+			timelineRestoreManager.addReplicationEvent(consumeMessage);
+			
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
 	}
@@ -148,14 +173,20 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'removeByTimes'")
 	public void onConsumeMessageForRemoveByTimes(ConsumeMessage consumeMessage) {
 		//
-		String strRemoveByTimes = consumeMessage.getMessage();
-		try {
-			RemoveByTimes removeByTimes = om.readValue(strRemoveByTimes, RemoveByTimes.class);
-			timelineManager.removeByTimes(removeByTimes.getTimeline(), removeByTimes.getTimestamps());
-		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForRemoveByTimes : error = " + e.getStackTrace());
-		} finally {
+		if (isServiceAvailable()) {
+			String strRemoveByTimes = consumeMessage.getMessage();
+			try {
+				RemoveByTimes removeByTimes = om.readValue(strRemoveByTimes, RemoveByTimes.class);
+				timelineManager.removeByTimes(removeByTimes.getTimeline(), removeByTimes.getTimestamps());
+			} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure | JsonProcessingException e) {
+				logger.error("[ReplicationManager].onConsumeMessageForRemoveByTimes : error = " + e);
+			} finally {
+				publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
+			}
+		}
+		else {
+			timelineRestoreManager.addReplicationEvent(consumeMessage);
+			
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
 	}
@@ -163,14 +194,20 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'removeByPeriod'")
 	public void onConsumeMessageForRemoveByPeriod(ConsumeMessage consumeMessage) {
 		//
-		String strRemoveByPeriod = consumeMessage.getMessage();
-		try {
-			RemoveByPeriod removeByPeriod = om.readValue(strRemoveByPeriod, RemoveByPeriod.class);
-			timelineManager.removeByPeriod(removeByPeriod.getTimeline(), removeByPeriod.getFromTimestamp(), removeByPeriod.getToTimestamp());
-		} catch (ExceptionTimelineResourceNotFound | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForRemoveByPeriod : error = " + e.getStackTrace());
-		} finally {
+		if (isServiceAvailable()) {
+			String strRemoveByPeriod = consumeMessage.getMessage();
+			try {
+				RemoveByPeriod removeByPeriod = om.readValue(strRemoveByPeriod, RemoveByPeriod.class);
+				timelineManager.removeByPeriod(removeByPeriod.getTimeline(), removeByPeriod.getFromTimestamp(), removeByPeriod.getToTimestamp());
+			} catch (ExceptionTimelineResourceNotFound | JsonProcessingException e) {
+				logger.error("[ReplicationManager].onConsumeMessageForRemoveByPeriod : error = " + e);
+			} finally {
+				publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
+			}
+		}
+		else {
+			timelineRestoreManager.addReplicationEvent(consumeMessage);
+			
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
 	}
@@ -178,14 +215,20 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'removeByBefore'")
 	public void onConsumeMessageForRemoveByBefore(ConsumeMessage consumeMessage) {
 		//
-		String strRemoveByBefore = consumeMessage.getMessage();
-		try {
-			RemoveByBefore removeByBefore = om.readValue(strRemoveByBefore, RemoveByBefore.class);
-			timelineManager.removeByBefore(removeByBefore.getTimeline(), removeByBefore.getToTimestamp());
-		} catch (ExceptionTimelineResourceNotFound | JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForRemoveByBefore : error = " + e.getStackTrace());
-		} finally {
+		if (isServiceAvailable()) {
+			String strRemoveByBefore = consumeMessage.getMessage();
+			try {
+				RemoveByBefore removeByBefore = om.readValue(strRemoveByBefore, RemoveByBefore.class);
+				timelineManager.removeByBefore(removeByBefore.getTimeline(), removeByBefore.getToTimestamp());
+			} catch (ExceptionTimelineResourceNotFound | JsonProcessingException e) {
+				logger.error("[ReplicationManager].onConsumeMessageForRemoveByBefore : error = " + e);
+			} finally {
+				publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
+			}
+		}
+		else {
+			timelineRestoreManager.addReplicationEvent(consumeMessage);
+			
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
 	}
@@ -193,13 +236,19 @@ public class ReplicationManagerImpl implements ReplicationManager {
 	@EventListener(classes=ConsumeMessage.class, condition = "#consumeMessage.type == 'clear'")
 	public void onConsumeMessageForClear(ConsumeMessage consumeMessage) {
 		//
-		String timeline = consumeMessage.getMessage();
-		try {
-			timelineManager.clear(timeline);
-		} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure  e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onConsumeMessageForClear : error = " + e.getStackTrace());
-		} finally {
+		if (isServiceAvailable()) {
+			String timeline = consumeMessage.getMessage();
+			try {
+				timelineManager.clear(timeline);
+			} catch (ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure  e) {
+				logger.error("[ReplicationManager].onConsumeMessageForClear : error = " + e);
+			} finally {
+				publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
+			}
+		}
+		else {
+			timelineRestoreManager.addReplicationEvent(consumeMessage);
+			
 			publishConsumeAck(consumeMessage.getClientId(), consumeMessage.getConsumerTag());
 		}
 	}
@@ -223,8 +272,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(putValue);
 			publishReplicationMessage(ReplicationTypeParamEnum.PUT.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicatePut : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicatePut : error = " + e);
 		}
 	}
 
@@ -235,8 +283,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(putValues);
 			publishReplicationMessage(ReplicationTypeParamEnum.PUT_ALL.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicatePutAll : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicatePutAll : error = " + e);
 		}
 	}
 
@@ -247,8 +294,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(putValue);
 			publishReplicationMessage(ReplicationTypeParamEnum.UPDATE.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicateUpdate : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicateUpdate : error = " + e);
 		}
 	}
 
@@ -259,8 +305,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(putValues);
 			publishReplicationMessage(ReplicationTypeParamEnum.UPDATE_ALL.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicateUpdateAll : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicateUpdateAll : error = " + e);
 		}
 	}
 
@@ -271,8 +316,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(remove);
 			publishReplicationMessage(ReplicationTypeParamEnum.REMOVE.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicateRemove : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicateRemove : error = " + e);
 		}
 	}
 
@@ -283,8 +327,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(removeByTimes);
 			publishReplicationMessage(ReplicationTypeParamEnum.REMOVE_BY_TIMES.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicateRemoveByTimes : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicateRemoveByTimes : error = " + e);
 		}
 	}
 
@@ -295,8 +338,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(removeByPeriod);
 			publishReplicationMessage(ReplicationTypeParamEnum.REMOVE_BY_PERIOD.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicateRemoveByPeriod : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicateRemoveByPeriod : error = " + e);
 		}
 	}
 
@@ -307,8 +349,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 			String message = om.writeValueAsString(removeByBefore);
 			publishReplicationMessage(ReplicationTypeParamEnum.REMOVE_BY_BEFORE.getType(), message);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].replicateRemoveByBefore : error = " + e.getStackTrace());
+			logger.error("[ReplicationManager].replicateRemoveByBefore : error = " + e);
 		}
 	}
 
@@ -331,8 +372,7 @@ public class ReplicationManagerImpl implements ReplicationManager {
 		try {
 			logger.info("[ReplicationManager].onReplicationMessageAckEvent : trace ID = " + publishAck.toString());
 		} catch (Exception e) {
-			//e.printStackTrace();
-			logger.error("[ReplicationManager].onReplicationMessageAckEvent : " + e.getStackTrace());
+			logger.error("[ReplicationManager].onReplicationMessageAckEvent : " + e);
 		}
 	}
 	

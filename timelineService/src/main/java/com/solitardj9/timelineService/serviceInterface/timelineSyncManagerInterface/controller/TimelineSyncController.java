@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,8 @@ import com.solitardj9.timelineService.application.timelineManager.service.except
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineInternalFailure;
 import com.solitardj9.timelineService.application.timelineManager.service.exception.ExceptionTimelineResourceNotFound;
 import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineSyncManager;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceClusterStatus;
+import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.exception.FileDownloadException;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.request.put.RequestPut;
 import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.request.put.RequestPutAll;
@@ -58,12 +61,23 @@ public class TimelineSyncController {
 	private static final Logger logger = LoggerFactory.getLogger(TimelineSyncController.class);
 	
 	@Autowired
+	ServiceInstancesManager serviceInstancesManager;
+	
+	@Autowired
 	TimelineManager timelineManager;
 
 	@Autowired
 	TimelineSyncManager timelineSyncManager;
 	
 	private ObjectMapper om = new ObjectMapper();
+	
+	private Boolean isServiceAvailable() {
+		//
+		if (serviceInstancesManager.isClustered().equals(ServiceInstanceClusterStatus.ONLINE)) {
+			return true;
+		}
+		return false;
+	}
 	
 	@SuppressWarnings("rawtypes")
 	@PostMapping(value="/timelines/{timeline}")
@@ -72,15 +86,18 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].addTimeline is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].addTimeline : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		try {
 			timelineSyncManager.addTimeline(timeline);
 		} catch (ExceptionTimelineConflictFailure e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].addTimeline : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].addTimeline : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.CONFLICT.value(), timeline), HttpStatus.CONFLICT);
 		} catch (ExceptionTimelineInternalFailure e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].addTimeline : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].addTimeline : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<>(new ResponseTimeline(HttpStatus.OK.value(), timeline), HttpStatus.OK);
@@ -93,11 +110,15 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].deleteTimeline is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].deleteTimeline : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		try {
 			timelineSyncManager.deleteTimeline(timeline);
 		} catch (ExceptionTimelineResourceNotFound e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].deleteTimeline : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].deleteTimeline : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		}
 		
@@ -109,6 +130,11 @@ public class TimelineSyncController {
 	public ResponseEntity getkeySetOfTimelines(@RequestBody(required=false) String requestBody) {
 		//
 		logger.info("[TimelineSyncController].getkeySetOfTimelines is called.");
+		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].getkeySetOfTimelines : error = service is not available.");
+			return new ResponseEntity<>(new ResponseKeySetOfTimelines(HttpStatus.SERVICE_UNAVAILABLE.value(), new HashSet<String>()), HttpStatus.SERVICE_UNAVAILABLE);
+		}
 		
 		Set<String> retSet = timelineManager.getkeySetOfTimelines();
 		
@@ -142,14 +168,18 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].getTimelineValues is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].getTimelineValues : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		TreeMap<Long, String> retMap = new TreeMap<>();
 		if (type.equals("get")) {
 			//
 			try {
 				retMap = timelineManager.get(timeline);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].get : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].get : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			}
 		}
@@ -158,8 +188,7 @@ public class TimelineSyncController {
 			try {
 				retMap = timelineManager.getByTime(timeline, time);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].getByTime : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].getByTime : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			}
 		}
@@ -168,8 +197,7 @@ public class TimelineSyncController {
 			try {
 				retMap = timelineManager.getByPreiod(timeline, fromTime, toTime);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].getByPeriod : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].getByPeriod : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			}
 		}
@@ -188,12 +216,17 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].getkeySetOfTimeline is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].getkeySetOfTimeline : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		Set<Long> retSet;
 		try {
 			retSet = timelineManager.getkeySetOfTimeline(timeline);
 		} catch (ExceptionTimelineResourceNotFound e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].getkeySetOfTimeline : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].getkeySetOfTimeline : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		}
 		
@@ -227,6 +260,11 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].getTimelinesValues is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].getTimelinesValues : error = service is not available.");
+			return new ResponseEntity<>(new ResponseDefualt(HttpStatus.SERVICE_UNAVAILABLE.value()), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		Map<String, TreeMap<Long, String>> retMap = new HashMap<>();
 		try {
 			List<String> timelines = om.readValue(requestBody, List.class);
@@ -237,7 +275,7 @@ public class TimelineSyncController {
 					retMap = timelineManager.getTimelines(timelines);
 				} catch (Exception e) {
 					//e.printStackTrace();
-					logger.error("[TimelineSyncController].getTimelines : error = " + e.getStackTrace());
+					logger.error("[TimelineSyncController].getTimelines : error = " + e);
 					return new ResponseEntity<>(new ResponseDefualt(HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 				}
 			}
@@ -247,7 +285,7 @@ public class TimelineSyncController {
 					retMap = timelineManager.getTimelinesByTime(timelines, time);
 				} catch (Exception e) {
 					//e.printStackTrace();
-					logger.error("[TimelineSyncController].getTimelinesByTime : error = " + e.getStackTrace());
+					logger.error("[TimelineSyncController].getTimelinesByTime : error = " + e);
 					return new ResponseEntity<>(new ResponseDefualt(HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 				}
 			}
@@ -257,7 +295,7 @@ public class TimelineSyncController {
 					retMap = timelineManager.getTimelinesByPreiod(timelines, fromTime, toTime);
 				} catch (Exception e) {
 					//e.printStackTrace();
-					logger.error("[TimelineSyncController].getTimelinesByPeriod : error = " + e.getStackTrace());
+					logger.error("[TimelineSyncController].getTimelinesByPeriod : error = " + e);
 					return new ResponseEntity<>(new ResponseDefualt(HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 				}
 			}
@@ -268,7 +306,7 @@ public class TimelineSyncController {
 			
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].getTimelinesValues : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].getTimelinesValues : error = " + e);
 			return new ResponseEntity<>(new ResponseDefualt(HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
 		}
 		
@@ -292,24 +330,26 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].putTimelineValue is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].putTimelineValue : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		RequestPut request = null;
 		try {
 			request = om.readValue(requestBody, RequestPut.class);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].putTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].putTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 		}
 		
 		try {
 			timelineSyncManager.put(timeline, request.getTime(), request.getValue());
 		} catch (ExceptionTimelineResourceNotFound e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].putTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].putTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		} catch (ExceptionTimelineInternalFailure e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].putTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].putTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
@@ -336,12 +376,17 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].putTimelineValues is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].putTimelineValues : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		RequestPutAll request = null;
 		try {
 			request = om.readValue(requestBody, RequestPutAll.class);
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].putTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].putTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 		}
 		
@@ -349,11 +394,11 @@ public class TimelineSyncController {
 			timelineSyncManager.putAll(timeline, request.getValues());
 		} catch (ExceptionTimelineResourceNotFound e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].putTimelineValues : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].putTimelineValues : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		} catch (ExceptionTimelineInternalFailure e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].putTimelineValues : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].putTimelineValues : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
@@ -376,12 +421,17 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].patchTimelineValue is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].patchTimelineValue : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		RequestPut request = null;
 		try {
 			request = om.readValue(requestBody, RequestPut.class);
 		} catch (JsonProcessingException e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 		}
 		
@@ -389,11 +439,11 @@ public class TimelineSyncController {
 			timelineSyncManager.update(timeline, request.getTime(), request.getValue());
 		} catch (ExceptionTimelineResourceNotFound e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		} catch (ExceptionTimelineInternalFailure e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].patchTimelineValue : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
@@ -420,24 +470,26 @@ public class TimelineSyncController {
 		//
 		logger.info("[TimelineSyncController].patchTimelineValues is called.");
 		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].patchTimelineValues : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
+		
 		RequestPutAll request = null;
 		try {
 			request = om.readValue(requestBody, RequestPutAll.class);
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 		}
 		
 		try {
 			timelineSyncManager.updateAll(timeline, request.getValues());
 		} catch (ExceptionTimelineResourceNotFound e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		} catch (ExceptionTimelineInternalFailure e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].patchTimelineValues : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		
@@ -467,25 +519,28 @@ public class TimelineSyncController {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@DeleteMapping(value="/timelines/{timeline}/values")
 	public ResponseEntity deleteTimelineValues(@PathVariable("timeline") String timeline,
-											   @RequestBody(required=false) String requestBody,
-											   @RequestParam(value = "type", required=true) String type,
-											   @RequestParam(value = "time", required=false) Long time,
-											   @RequestParam(value = "fromTime", required=false) Long fromTime,
-											   @RequestParam(value = "toTime", required=false) Long toTime) {
+													 @RequestBody(required=false) String requestBody,
+													 @RequestParam(value = "type", required=true) String type,
+													 @RequestParam(value = "time", required=false) Long time,
+													 @RequestParam(value = "fromTime", required=false) Long fromTime,
+													 @RequestParam(value = "toTime", required=false) Long toTime) {
 		//
 		logger.info("[TimelineSyncController].deleteTimelineValues is called.");
+		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].deleteTimelineValues : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
 			
 		if (type.equals("remove")) {
 			//
 			try {
 				timelineSyncManager.remove(timeline, time);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].remove : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].remove : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			} catch (ExceptionTimelineInternalFailure e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].remove : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].remove : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		}
@@ -497,17 +552,14 @@ public class TimelineSyncController {
 				try {
 					timelineSyncManager.removeByTimes(timeline, times);
 				} catch (ExceptionTimelineResourceNotFound e) {
-					//e.printStackTrace();
-					logger.error("[TimelineSyncController].removeByTimes : error = " + e.getStackTrace());
+					logger.error("[TimelineSyncController].removeByTimes : error = " + e);
 					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 				} catch (ExceptionTimelineInternalFailure e) {
-					//e.printStackTrace();
-					logger.error("[TimelineSyncController].removeByTimes : error = " + e.getStackTrace());
+					logger.error("[TimelineSyncController].removeByTimes : error = " + e);
 					return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 				}
 			} catch (JsonProcessingException e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].removeByTimes : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].removeByTimes : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.BAD_REQUEST.value(), timeline), HttpStatus.BAD_REQUEST);
 			}
 		}
@@ -516,8 +568,7 @@ public class TimelineSyncController {
 			try {
 				timelineSyncManager.removeByPeriod(timeline, fromTime, toTime);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].removeByPeriod : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].removeByPeriod : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			}
 		}
@@ -526,8 +577,7 @@ public class TimelineSyncController {
 			try {
 				timelineSyncManager.removeByBefore(timeline, toTime);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].removeByBefore : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].removeByBefore : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			}
 		}
@@ -536,12 +586,10 @@ public class TimelineSyncController {
 			try {
 				timelineSyncManager.clear(timeline);
 			} catch (ExceptionTimelineResourceNotFound e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].clear : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].clear : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 			} catch (ExceptionTimelineInternalFailure e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncController].clear : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncController].clear : error = " + e);
 				return new ResponseEntity<>(new ResponseTimeline(HttpStatus.INTERNAL_SERVER_ERROR.value(), timeline), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		}
@@ -556,16 +604,20 @@ public class TimelineSyncController {
 	@SuppressWarnings("rawtypes")
 	@GetMapping(value="/timelines/{timeline}/empty")
 	public ResponseEntity isEmpty(@PathVariable("timeline") String timeline,
-								  @RequestBody(required=false) String requestBody) {
+									  @RequestBody(required=false) String requestBody) {
 		//
 		logger.info("[TimelineSyncController].isEmpty is called.");
+		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].isEmpty : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
 		
 		Boolean ret = true;
 		try {
 			ret = timelineManager.isEmpty(timeline);
 		} catch (ExceptionTimelineResourceNotFound e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncController].getTimeline : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].getTimeline : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		}
 		
@@ -575,16 +627,21 @@ public class TimelineSyncController {
 	@SuppressWarnings("rawtypes")
 	@GetMapping(value="/timelines/{timeline}/size")
 	public ResponseEntity getSize(@PathVariable("timeline") String timeline,
-								  @RequestBody(required=false) String requestBody) {
+								  	  @RequestBody(required=false) String requestBody) {
 		//
 		logger.info("[TimelineSyncController].getSize is called.");
+		
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].getSize : error = service is not available.");
+			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.SERVICE_UNAVAILABLE.value(), timeline), HttpStatus.SERVICE_UNAVAILABLE);
+		}
 		
 		Integer ret = null;
 		try {
 			ret = timelineManager.size(timeline);
 		} catch (ExceptionTimelineResourceNotFound e) {
 			//e.printStackTrace();
-			logger.error("[TimelineSyncController].getTimeline : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncController].getTimeline : error = " + e);
 			return new ResponseEntity<>(new ResponseTimeline(HttpStatus.NOT_FOUND.value(), timeline), HttpStatus.NOT_FOUND);
 		}
 		
@@ -592,9 +649,13 @@ public class TimelineSyncController {
 	}
 	
 	@GetMapping("/timelines/backup/{fileName}")
-    public ResponseEntity<Resource> getBackup(@PathVariable String fileName,
-    											 HttpServletRequest request) {
+	public ResponseEntity<Resource> getBackup(@PathVariable String fileName,
+													HttpServletRequest request) {
 		//
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].getBackup : error = service is not available.");
+		}
+		
 		timelineManager.backupTimelines(fileName);
 		
 		// Load file as Resource
@@ -623,6 +684,11 @@ public class TimelineSyncController {
 	@DeleteMapping("/timelines/backup/{fileName}")
     public ResponseEntity deleteBackup(@PathVariable String fileName) {
 		//
+		if (!isServiceAvailable()) {
+			logger.error("[TimelineSyncController].deleteBackup : error = service is not available.");
+			return new ResponseEntity<>(new ResponseDefualt(HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.OK);
+		}
+		
 		if (MapFileUtil.deleteFile(fileName)) {
 			return new ResponseEntity<>(new ResponseDefualt(HttpStatus.OK.value()), HttpStatus.OK);
 		}

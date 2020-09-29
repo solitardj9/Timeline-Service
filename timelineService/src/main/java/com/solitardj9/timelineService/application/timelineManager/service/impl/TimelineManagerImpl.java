@@ -1,5 +1,6 @@
 package com.solitardj9.timelineService.application.timelineManager.service.impl;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -391,8 +392,28 @@ public class TimelineManagerImpl implements TimelineManager {
 	}
 
 	@Override
-	public void restoreTimelines(String fileName) {
-		// TODO Auto-generated method stub
+	public void restoreTimelines(File file) {
+		//
+		Map<String, ConcurrentNavigableMap<Long, String>> restoreTimelines = MapFileUtil.readTimelinesFromFile(file);
 		
+		for (Entry<String, ConcurrentNavigableMap<Long, String>> restoreTimeline : restoreTimelines.entrySet()) {
+			//
+			String timelineName = restoreTimeline.getKey();
+			timelines.putIfAbsent(timelineName, new ConcurrentSkipListMap<Long, String>());
+			
+			for (Entry<Long, String> iter : restoreTimeline.getValue().entrySet()) {
+				timelines.get(timelineName).putIfAbsent(iter.getKey(), iter.getValue());
+			}
+		}
+	}
+
+	@Override
+	public void clearTimelines() {
+		//
+		for (Entry<String, ConcurrentNavigableMap<Long, String>> timeline : timelines.entrySet()) {
+			//
+			timeline.getValue().clear();
+		}
+		timelines.clear();
 	}
 }

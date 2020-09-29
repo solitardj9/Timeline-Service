@@ -2,6 +2,8 @@ package com.solitardj9.timelineService.service.serviceInstancesManager.service;
 
 import java.util.Map;
 
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceClusterStatus;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceRegisterStatus;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
 
 public interface ServiceInstancesManager {
@@ -22,5 +24,7 @@ public interface ServiceInstancesManager {
 	
 	public void checkHealth();
 	
-	public Boolean isRegistered();
+	public ServiceInstanceRegisterStatus isRegistered();
+	
+	public ServiceInstanceClusterStatus isClustered();
 }

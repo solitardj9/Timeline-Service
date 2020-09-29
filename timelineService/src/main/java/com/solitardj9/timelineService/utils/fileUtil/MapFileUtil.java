@@ -65,6 +65,33 @@ public class MapFileUtil {
 		return timelines;
 	}
 	
+	@SuppressWarnings({ "unchecked" })
+	public static Map<String, ConcurrentNavigableMap<Long, String>> readTimelinesFromFile(File file) {
+		//
+		Map<String, ConcurrentNavigableMap<Long, String>> timelines = new HashMap<>();
+		ObjectInputStream ois = null;
+		try {
+            ois = new ObjectInputStream(new FileInputStream(file));
+            timelines = (Map<String, ConcurrentNavigableMap<Long, String>>) ois.readObject();
+            ois.close();
+        } catch (IOException e) {
+        	logger.error("[MapFileUtil].readTimelinesFromFile : error = " + e.getStackTrace());
+        	return timelines;
+        } catch (ClassNotFoundException e) {
+        	logger.error("[MapFileUtil].readTimelinesFromFile : error = " + e.getStackTrace());
+        	return timelines;
+        } finally {
+        	if (ois != null) {
+        		try {
+        			ois.close();
+				} catch (IOException e) {
+					logger.error("[MapFileUtil].readTimelinesFromFile : error = " + e.getStackTrace());
+				}
+        	}
+        }
+		return timelines;
+	}
+	
 	public static Boolean deleteFile(String fileName) {
 		//
 		File file = new File(fileName);

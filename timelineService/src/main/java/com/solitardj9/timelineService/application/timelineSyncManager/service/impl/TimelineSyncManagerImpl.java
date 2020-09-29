@@ -1,9 +1,7 @@
 package com.solitardj9.timelineService.application.timelineSyncManager.service.impl;
 
 import java.sql.Timestamp;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 
 import javax.annotation.PostConstruct;
@@ -11,13 +9,8 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.solitardj9.timelineService.application.replicationManager.service.ReplicationManager;
 import com.solitardj9.timelineService.application.timelineManager.model.PutValue;
 import com.solitardj9.timelineService.application.timelineManager.model.PutValues;
@@ -32,10 +25,7 @@ import com.solitardj9.timelineService.application.timelineManager.service.except
 import com.solitardj9.timelineService.application.timelineSyncManager.service.TimelineSyncManager;
 import com.solitardj9.timelineService.application.timelineSyncManager.service.data.TimelineMetadata;
 import com.solitardj9.timelineService.application.timelineSyncManager.service.data.TimelineSyncManagerParamsEnum.TimelineClusterInfo;
-import com.solitardj9.timelineService.application.timelineSyncManager.service.data.TimelineSyncManagerParamsEnum.TimelineExistStatus;
 import com.solitardj9.timelineService.service.serviceInstancesManager.service.ServiceInstancesManager;
-import com.solitardj9.timelineService.service.serviceInstancesManager.service.data.ServiceInstance;
-import com.solitardj9.timelineService.serviceInterface.timelineSyncManagerInterface.model.response.ResponseTimelineValues;
 import com.solitardj9.timelineService.systemInterface.httpInterface.service.HttpProxyAdaptor;
 import com.solitardj9.timelineService.systemInterface.inMemoryInterface.model.InMemoryInstance;
 import com.solitardj9.timelineService.systemInterface.inMemoryInterface.service.InMemoryManager;
@@ -66,7 +56,7 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 	
 	private Boolean readBackupData = true;
 	
-	private ObjectMapper om = new ObjectMapper();
+	//private ObjectMapper om = new ObjectMapper();
 	
 	@PostConstruct
 	public void init() {
@@ -75,10 +65,11 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		try {
 			inMemoryManager.addMap(inMemoryInstance);
 		} catch (ExceptionHazelcastDataStructureCreationFailure | ExceptionHazelcastDataStructureNotFoundFailure e) {
-			logger.error("[TimelineSyncManager].init : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncManager].init : error = " + e);
 		}
 	}
-	
+
+	/*
 	private TimelineExistStatus exists(String timeline) {
 		//
 		if (!timelineManager.containTimeline(timeline)) {
@@ -91,8 +82,7 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 					return TimelineExistStatus.NONE;
 				}
 			} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncManager].isValidTimeline : error = " + e.getStackTrace());
+				logger.error("[TimelineSyncManager].isValidTimeline : error = " + e);
 				return TimelineExistStatus.ERROR;
 			}
 		}
@@ -122,27 +112,6 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 		ResponseEntity<String> response = httpProxyAdaptor.executeHttpProxy(scheme, url, path, queryParams, HttpMethod.GET, headers, null);
 		String responseBody = response.getBody();
 		
-//		Map<String, Object> responseMap = new HashMap<>();
-//		TreeMap<Long, String> retMap = new TreeMap<>();
-//		try {
-//			responseMap = om.readValue(responseBody, Map.class);
-//			if (((Integer)responseMap.get("status")).equals(200)) {
-//				Map<String, Object> values = (Map)responseMap.get("values");
-//				for (Entry<String, Object> iter : values.entrySet()) {
-//					retMap.put(Long.valueOf(iter.getKey()), (String)iter.getValue());
-//				}
-//			}
-//			else {
-//				throw new ExceptionTimelineResourceNotFound();
-//			}
-//		} catch (JsonProcessingException e) {
-//			//e.printStackTrace();
-//			logger.error("[TimelineSyncManager].getTimelineFromCluster : error = " + e.getStackTrace());
-//			return retMap;
-//		}
-//		
-//		return retMap;
-		
 		TreeMap<Long, String> retMap = new TreeMap<>();
 		try {
 			ResponseTimelineValues responseObj = om.readValue(responseBody, ResponseTimelineValues.class);
@@ -153,59 +122,34 @@ public class TimelineSyncManagerImpl implements TimelineSyncManager {
 				throw new ExceptionTimelineResourceNotFound();
 			}
 		} catch (JsonProcessingException e) {
-			//e.printStackTrace();
-			logger.error("[TimelineSyncManager].getTimelineFromCluster : error = " + e.getStackTrace());
+			logger.error("[TimelineSyncManager].getTimelineFromCluster : error = " + e);
 			return retMap;
 		}
 	}
+	//*/
 	
 	@Override
 	public void addTimeline(String timeline) throws ExceptionTimelineConflictFailure, ExceptionTimelineInternalFailure {
 		//
-		TimelineExistStatus status = exists(timeline);
-		
-		if (status.equals(TimelineExistStatus.NONE) || status.equals(TimelineExistStatus.LOCAL)) {
-			//
-			String addedTimeline = null;
-			try {
-				addedTimeline = timelineManager.addTimeline(timeline);
-			} catch (ExceptionTimelineConflictFailure e) {
-				throw new ExceptionTimelineConflictFailure();
-			}
-			
-			if (addedTimeline != null) {
-				replicationManager.replicateAddTimeline(addedTimeline);
-				
-				TimelineMetadata timelineMetadata = new TimelineMetadata(addedTimeline, new Timestamp(System.currentTimeMillis()));
-				try {
-					inMemoryManager.getMap(TimelineClusterInfo.TIMELINE_METADATA.getMap()).put(addedTimeline, timelineMetadata);
-				} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
-					//e.printStackTrace();
-					logger.error("[TimelineSyncManager].addTimeline : error = " + e.getStackTrace());
-				}
-			}
-		}
-		else if (status.equals(TimelineExistStatus.CLUSTER)) {
-			//
-			try {
-				TreeMap<Long, String> values = getTimelineFromCluster(timeline);
-				timelineManager.addTimeline(timeline);
-				timelineManager.putAll(timeline, values);
-			} catch (ExceptionTimelineConflictFailure | ExceptionTimelineResourceNotFound | ExceptionTimelineInternalFailure e) {
-				//e.printStackTrace();
-				logger.error("[TimelineSyncManager].addTimeline : error = " + e.getStackTrace());
-				throw new ExceptionTimelineInternalFailure();
-			}
-			
+		String addedTimeline = null;
+		try {
+			addedTimeline = timelineManager.addTimeline(timeline);
+		} catch (ExceptionTimelineConflictFailure e) {
 			throw new ExceptionTimelineConflictFailure();
 		}
-		else {
-			throw new ExceptionTimelineInternalFailure();
+		
+		if (addedTimeline != null) {
+			replicationManager.replicateAddTimeline(addedTimeline);
+			
+			TimelineMetadata timelineMetadata = new TimelineMetadata(addedTimeline, new Timestamp(System.currentTimeMillis()));
+			try {
+				inMemoryManager.getMap(TimelineClusterInfo.TIMELINE_METADATA.getMap()).put(addedTimeline, timelineMetadata);
+			} catch (ExceptionHazelcastDataStructureNotFoundFailure e) {
+				logger.error("[TimelineSyncManager].addTimeline : error = " + e);
+			}
 		}
 	}
 
-	// TODO : need to make coverage codes for Fail Over
-	
 	@Override
 	public void deleteTimeline(String timeline) throws ExceptionTimelineResourceNotFound {
 		//

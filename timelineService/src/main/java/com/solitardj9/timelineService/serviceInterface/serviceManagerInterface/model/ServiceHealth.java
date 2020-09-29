@@ -2,21 +2,27 @@ package com.solitardj9.timelineService.serviceInterface.serviceManagerInterface.
 
 import java.sql.Timestamp;
 
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceClusterStatus;
+import com.solitardj9.timelineService.service.serviceInstancesManager.model.ServiceInstanceParamEnum.ServiceInstanceRegisterStatus;
+
 public class ServiceHealth {
 	//
 	private String serviceName;
 	
 	private Timestamp timestamp;
 	
-	private Boolean isRegistered;
+	private ServiceInstanceRegisterStatus registerStatus;
+	
+	private ServiceInstanceClusterStatus clusterStatus;
 
 	public ServiceHealth() {
 	}
 	
-	public ServiceHealth(String serviceName, Timestamp timestamp, Boolean isRegistered) {
+	public ServiceHealth(String serviceName, Timestamp timestamp, ServiceInstanceRegisterStatus registerStatus, ServiceInstanceClusterStatus clusterStatus) {
 		this.serviceName = serviceName;
 		this.timestamp = timestamp;
-		this.isRegistered = isRegistered;
+		this.registerStatus = registerStatus;
+		this.clusterStatus = clusterStatus;
 	}
 
 	public String getServiceName() {
@@ -35,17 +41,25 @@ public class ServiceHealth {
 		this.timestamp = timestamp;
 	}
 
-	public Boolean getIsRegistered() {
-		return isRegistered;
+	public ServiceInstanceRegisterStatus getRegisterStatus() {
+		return registerStatus;
 	}
 
-	public void setIsRegistered(Boolean isRegistered) {
-		this.isRegistered = isRegistered;
+	public void setRegisterStatus(ServiceInstanceRegisterStatus registerStatus) {
+		this.registerStatus = registerStatus;
+	}
+
+	public ServiceInstanceClusterStatus getClusterStatus() {
+		return clusterStatus;
+	}
+
+	public void setClusterStatus(ServiceInstanceClusterStatus clusterStatus) {
+		this.clusterStatus = clusterStatus;
 	}
 
 	@Override
 	public String toString() {
-		return "ServiceHealth [serviceName=" + serviceName + ", timestamp=" + timestamp + ", isRegistered="
-				+ isRegistered + "]";
+		return "ServiceHealth [serviceName=" + serviceName + ", timestamp=" + timestamp + ", registerStatus="
+				+ registerStatus + ", clusterStatus=" + clusterStatus + "]";
 	}
 }

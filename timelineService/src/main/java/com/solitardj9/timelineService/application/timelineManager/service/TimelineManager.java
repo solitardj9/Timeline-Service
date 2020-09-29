@@ -1,5 +1,6 @@
 package com.solitardj9.timelineService.application.timelineManager.service;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -135,5 +136,7 @@ public interface TimelineManager {
 	
 	public void backupTimelines(String fileName);
 	
-	public void restoreTimelines(String fileName);
+	public void restoreTimelines(File file);
+	
+	public void clearTimelines();
 }

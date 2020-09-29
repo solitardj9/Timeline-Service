@@ -83,7 +83,7 @@ public class ServiceController {
 		//
 		//logger.info("[ServiceController].checkHealth is called.");
 		
-		return new ResponseEntity<>(new ServiceHealth(serviceManager.getServiceName(), new Timestamp(System.currentTimeMillis()), serviceInstancesManager.isRegistered()), HttpStatus.OK);
+		return new ResponseEntity<>(new ServiceHealth(serviceManager.getServiceName(), new Timestamp(System.currentTimeMillis()), serviceInstancesManager.isRegistered(), serviceInstancesManager.isClustered()), HttpStatus.OK);
     }
 	
 	@SuppressWarnings("rawtypes")
