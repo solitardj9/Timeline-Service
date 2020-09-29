@@ -19,3 +19,9 @@ Store a message in timeline
 > 2) Stored data is replicated.
 > > replication with event bus (RabbitMQ)
 
+
+
+
+work to do
+1. restore data from file
+2. solve conflicts in restoring and replication events
