@@ -21,6 +21,12 @@ public class JsonUtil {
 	
 	private static ObjectMapper om = new ObjectMapper();
 	
+	public static Object readValue(String jsonString, String keyPath) {
+		//
+		DocumentContext dc = JsonPath.parse(jsonString);
+		return dc.read(keyPath);
+	}
+	
 	public static String mergeJsonString(String jsonString, String updateJsonString) {
         //
 		if (jsonString == null || jsonString.isEmpty()) {
@@ -158,11 +164,15 @@ public class JsonUtil {
 			}
 			
 			if (!isExistPath(dc, (jsonPath + "." + key))) {
+				if (dc.read(jsonPath) == null) {
+					dc = dc.set(jsonPath, new HashMap<String, Object>());
+				}
+				
 				dc = dc.put(jsonPath, key, value);
 			}
 		}
 		catch (Exception e) {
-			logger.error("[JsonUtil].insertJsonDocument " + e.getStackTrace());
+			logger.error("[JsonUtil].insertJsonDocument " + e);
 		}
 	}
 }
